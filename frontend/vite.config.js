@@ -7,10 +7,12 @@ export default defineConfig({
     port: 8080,
     strictPort: true,
     host: true,
+    https: true,
     allowedHosts: true // This disables the host check for the preview server
   },
   server: {
     host: true,
+    https: true,
     allowedHosts: true // Do this if you are using 'npm run dev' (not recommended for prod)
   }
 })
