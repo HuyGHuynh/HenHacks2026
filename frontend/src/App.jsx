@@ -35,9 +35,50 @@ function DashboardPage() {
   const [demoIndex, setDemoIndex] = useState(0);
   const [lastResult, setLastResult] = useState(null);
   const [results, setResults] = useState([]);
+  const [geminiResults, setGeminiResults] = useState([]);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState("results");
   const [alertState, setAlertState] = useState(null);
+
+  // Fetch Gemini results from API
+  const fetchGeminiResults = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/gemini-results');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setGeminiResults(data.results);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching Gemini results:', error);
+    }
+  };
+
+  // Add test detection
+  const addTestDetection = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/test-detection', {
+        method: 'POST'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setGeminiResults(prev => [...prev, data.result]);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding test detection:', error);
+    }
+  };
+
+  // Fetch results on component mount and set up polling
+  useEffect(() => {
+    fetchGeminiResults();
+    // Poll for new results every 30 seconds
+    const interval = setInterval(fetchGeminiResults, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -279,22 +320,63 @@ function DashboardPage() {
 
           {activeTab === "results" && (
             <div className="panel-content">
-              {!results.length && (
-                <div className="empty-state">
-                  <span className="big">🌿</span>
-                  <span>Scan food to see results here</span>
+              {/* Gemini Detection Results */}
+              {geminiResults.length > 0 && (
+                <div className="gemini-section">
+                  <div className="section-header">
+                    <h3>🔬 Gemini Vision Analysis</h3>
+                    <button 
+                      className="refresh-btn" 
+                      onClick={fetchGeminiResults}
+                      title="Refresh results"
+                    >
+                      🔄
+                    </button>
+                  </div>
+                  {geminiResults.slice().reverse().map((result, index) => (
+                    <GeminiResultCard key={result.id} result={result} />
+                  ))}
                 </div>
               )}
 
-              {results.map((item) => (
-                <ResultCard
-                  item={item}
-                  key={item.id}
-                  onFreshPrimary={handlePrimaryAction}
-                  onSecondary={handleSecondaryAction}
-                  onSpoiledPrimary={handleSpoiledPrimary}
-                />
-              ))}
+              {/* Original Demo Results */}
+              {results.length > 0 && (
+                <div className="demo-section">
+                  <h4>📱 Demo Results</h4>
+                  {results.map((item) => (
+                    <ResultCard
+                      item={item}
+                      key={item.id}
+                      onFreshPrimary={handlePrimaryAction}
+                      onSecondary={handleSecondaryAction}
+                      onSpoiledPrimary={handleSpoiledPrimary}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!results.length && !geminiResults.length && (
+                <div className="empty-state">
+                  <span className="big">🌿</span>
+                  <span>Scan food to see results here</span>
+                  <button 
+                    className="test-btn"
+                    onClick={addTestDetection}
+                    style={{
+                      marginTop: '12px',
+                      padding: '8px 16px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🧪 Add Test Detection
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -349,6 +431,58 @@ function DashboardPage() {
         </div>
       </main>
     </>
+  );
+}
+
+function GeminiResultCard({ result }) {
+  const safeToEat = result.safe_to_eat?.toLowerCase().includes('yes');
+  const communityShare = result.community_share?.toLowerCase().includes('yes');
+
+  return (
+    <div className="gemini-result-card">
+      <div className="result-header">
+        <div className="result-title">
+          <h4>🍎 {result.name}</h4>
+          <div className="confidence-badge">
+            {(result.confidence * 100).toFixed(0)}% confidence
+          </div>
+        </div>
+        <div className="timestamp">
+          {new Date(result.timestamp).toLocaleTimeString()}
+        </div>
+      </div>
+      
+      <div className="result-details">
+        <div className="detail-row">
+          <span className="label">Quality:</span>
+          <span className="value quality">{result.quality}</span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Quantity:</span>
+          <span className="value">{result.quantity}</span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Condition:</span>
+          <span className="value">{result.condition}</span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Safe to Eat:</span>
+          <span className={`value safety ${safeToEat ? 'safe' : 'unsafe'}`}>
+            {safeToEat ? '✅' : '⚠️'} {result.safe_to_eat}
+          </span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Community Share:</span>
+          <span className={`value community ${communityShare ? 'shareable' : 'not-shareable'}`}>
+            {communityShare ? '🤝' : '❌'} {result.community_share}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 

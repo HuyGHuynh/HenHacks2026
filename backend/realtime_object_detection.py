@@ -15,6 +15,7 @@ import google.genai as genai
 from PIL import Image
 import io
 import re
+import requests
 from pymongo import MongoClient
 from datetime import datetime, timezone
 
@@ -97,6 +98,38 @@ class GeminiVisionDetector:
         except Exception as e:
             print(f"Error connecting to MongoDB: {e}")
             print("Database saving disabled.")
+    
+    def send_to_web_api(self, detection_data):
+        """Send detection results to Flask web API."""
+        try:
+            # Prepare data for web API
+            api_data = {
+                'name': detection_data['name'],
+                'quality': detection_data['quality'],
+                'quantity': detection_data['quantity'], 
+                'condition': detection_data['condition'],
+                'safe_to_eat': detection_data['safe'],
+                'community_share': detection_data['community'],
+                'confidence': detection_data['confidence']
+            }
+            
+            # Send to web API
+            response = requests.post('http://localhost:5000/api/gemini-results', 
+                                   json=api_data, timeout=5)
+            
+            if response.status_code == 200:
+                print("✅ Results sent to web interface!")
+                return True
+            else:
+                print(f"⚠️ Web API error: {response.status_code}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ Failed to send to web API: {e}")
+            return False
+        except Exception as e:
+            print(f"⚠️ Unexpected error sending to web: {e}")
+            return False
     
     def save_to_mongodb(self, detection_data, capture_info):
         """Save detection data to MongoDB."""
@@ -420,6 +453,9 @@ def main():
                                 'frame_count': frame_count
                             }
                             detector.save_to_mongodb(detection, capture_info)
+                            
+                            # Also send to web API
+                            detector.send_to_web_api(detection)
                         else:
                             print("✓ Detection not saved to database")
                         
