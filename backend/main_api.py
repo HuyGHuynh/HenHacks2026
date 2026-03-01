@@ -387,14 +387,15 @@ def suggest_recipes():
                 'error': 'Failed to get recipe suggestions'
             }), 500
             
-        # Parse suggested dishes
-        dishes = cooking_assistant.parse_dish_suggestions(response)
+        # Parse suggested dishes with full recipes (optimized single call)
+        dishes, recipes = cooking_assistant.parse_dish_suggestions_with_recipes(response)
         
         return jsonify({
             'success': True,
             'ingredients': ingredients,
             'raw_response': response,
             'suggested_dishes': dishes,
+            'recipes': recipes,
             'count': len(dishes)
         })
         
