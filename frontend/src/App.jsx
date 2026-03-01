@@ -18,13 +18,140 @@ const INITIAL_NOTIFICATIONS = [
   { id: "n5", icon: "👋", iconClass: "notif-neighbor", title: "3 neighbors in your network", sub: "Tap to manage sharing preferences", time: "Settings" },
 ];
 
-const PAGE = window.location.pathname.endsWith("/login.html") || window.location.pathname === "/login.html" ? "login" : "dashboard";
+const RECIPE_DATABASE = [
+  {
+    emoji: "🍳",
+    title: "Herb & Egg Frittata",
+    description: "A golden, fluffy frittata loaded with pantry vegetables and herbs.",
+    time: "22 min",
+    servings: "3-4",
+    difficulty: "Easy",
+    calories: "310",
+    badges: ["Vegetarian", "Gluten-Free"],
+    usedIngredients: ["Eggs", "Spinach", "Onion", "Cheese"],
+    extraIngredients: ["Olive oil", "Salt", "Pepper", "Fresh herbs"],
+    steps: [
+      "Whisk eggs with salt, pepper, and a splash of milk.",
+      "Saute onion until soft, then add spinach until wilted.",
+      "Pour in eggs, top with cheese, and bake until set.",
+      "Rest briefly, slice, and serve warm.",
+    ],
+  },
+  {
+    emoji: "🍲",
+    title: "One-Pot Tomato Rice",
+    description: "Savory tomato rice with garlic and vegetables, all cooked in one pot.",
+    time: "30 min",
+    servings: "4",
+    difficulty: "Easy",
+    calories: "380",
+    badges: ["Vegan", "Gluten-Free"],
+    usedIngredients: ["Tomatoes", "Rice", "Garlic", "Onion", "Carrots"],
+    extraIngredients: ["Cumin", "Paprika", "Vegetable stock", "Olive oil"],
+    steps: [
+      "Dice vegetables and mince garlic.",
+      "Cook onion and carrots until softened.",
+      "Add garlic, spices, tomatoes, and rice.",
+      "Pour in stock, cover, simmer, and fluff before serving.",
+    ],
+  },
+  {
+    emoji: "🥗",
+    title: "Roasted Veggie Bowl",
+    description: "Roasted vegetables over grains with a bright lemon-garlic dressing.",
+    time: "35 min",
+    servings: "2",
+    difficulty: "Easy",
+    calories: "420",
+    badges: ["Vegan"],
+    usedIngredients: ["Carrots", "Potatoes", "Spinach", "Lemon", "Garlic"],
+    extraIngredients: ["Olive oil", "Cumin", "Salt", "Pepper", "Rice"],
+    steps: [
+      "Roast chopped carrots and potatoes until golden.",
+      "Whisk lemon, garlic, olive oil, and salt.",
+      "Serve over grains with spinach and dressing.",
+    ],
+  },
+  {
+    emoji: "🍝",
+    title: "Quick Garlic Pasta",
+    description: "Silky pasta with garlic, olive oil, chili, and a finishing shower of cheese.",
+    time: "20 min",
+    servings: "2",
+    difficulty: "Easy",
+    calories: "490",
+    badges: ["Vegetarian"],
+    usedIngredients: ["Pasta", "Garlic", "Cheese"],
+    extraIngredients: ["Olive oil", "Chili flakes", "Salt", "Parsley"],
+    steps: [
+      "Cook pasta and reserve some pasta water.",
+      "Slowly cook sliced garlic in olive oil.",
+      "Toss pasta with garlic oil, chili, cheese, and pasta water.",
+    ],
+  },
+  {
+    emoji: "🍗",
+    title: "Lemon Herb Chicken",
+    description: "Pan-seared chicken with lemon, garlic, herbs, and wilted greens.",
+    time: "28 min",
+    servings: "2",
+    difficulty: "Medium",
+    calories: "520",
+    badges: ["Gluten-Free"],
+    usedIngredients: ["Chicken", "Lemon", "Garlic", "Spinach"],
+    extraIngredients: ["Olive oil", "Thyme", "Salt", "Pepper", "Butter"],
+    steps: [
+      "Season and marinate chicken with lemon, garlic, and herbs.",
+      "Sear until cooked through and golden.",
+      "Use the pan juices to wilt spinach and serve together.",
+    ],
+  },
+  {
+    emoji: "🥘",
+    title: "Potato & Egg Hash",
+    description: "Crispy potatoes with caramelized onion and soft eggs in one pan.",
+    time: "25 min",
+    servings: "2",
+    difficulty: "Easy",
+    calories: "440",
+    badges: ["Vegetarian", "Gluten-Free"],
+    usedIngredients: ["Potatoes", "Eggs", "Onion", "Garlic"],
+    extraIngredients: ["Olive oil", "Paprika", "Salt", "Fresh herbs"],
+    steps: [
+      "Par-cook diced potatoes.",
+      "Cook onion and garlic until soft.",
+      "Brown potatoes, crack eggs on top, cover, and cook until set.",
+    ],
+  },
+];
+
+const PAGE = (() => {
+  if (window.location.pathname.endsWith("/login.html") || window.location.pathname === "/login.html") {
+    return "login";
+  }
+  if (window.location.pathname.endsWith("/dashboard.html") || window.location.pathname === "/dashboard.html") {
+    return "overview";
+  }
+  if (window.location.pathname.endsWith("/recipe.html") || window.location.pathname === "/recipe.html") {
+    return "recipe";
+  }
+  return "detection";
+})();
 
 function App() {
-  return PAGE === "login" ? <LoginPage /> : <DashboardPage />;
+  if (PAGE === "login") {
+    return <LoginPage />;
+  }
+  if (PAGE === "overview") {
+    return <OverviewDashboardPage />;
+  }
+  if (PAGE === "recipe") {
+    return <RecipePage />;
+  }
+  return <DetectionPage />;
 }
 
-function DashboardPage() {
+function DetectionPage() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const scanTimeoutRef = useRef(null);
@@ -35,9 +162,50 @@ function DashboardPage() {
   const [demoIndex, setDemoIndex] = useState(0);
   const [lastResult, setLastResult] = useState(null);
   const [results, setResults] = useState([]);
+  const [geminiResults, setGeminiResults] = useState([]);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState("results");
   const [alertState, setAlertState] = useState(null);
+
+  // Fetch Gemini results from API
+  const fetchGeminiResults = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/gemini-results');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setGeminiResults(data.results);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching Gemini results:', error);
+    }
+  };
+
+  // Add test detection
+  const addTestDetection = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/test-detection', {
+        method: 'POST'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setGeminiResults(prev => [...prev, data.result]);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding test detection:', error);
+    }
+  };
+
+  // Fetch results on component mount and set up polling
+  useEffect(() => {
+    fetchGeminiResults();
+    // Poll for new results every 30 seconds
+    const interval = setInterval(fetchGeminiResults, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -279,22 +447,63 @@ function DashboardPage() {
 
           {activeTab === "results" && (
             <div className="panel-content">
-              {!results.length && (
-                <div className="empty-state">
-                  <span className="big">🌿</span>
-                  <span>Scan food to see results here</span>
+              {/* Gemini Detection Results */}
+              {geminiResults.length > 0 && (
+                <div className="gemini-section">
+                  <div className="section-header">
+                    <h3>🔬 Gemini Vision Analysis</h3>
+                    <button 
+                      className="refresh-btn" 
+                      onClick={fetchGeminiResults}
+                      title="Refresh results"
+                    >
+                      🔄
+                    </button>
+                  </div>
+                  {geminiResults.slice().reverse().map((result, index) => (
+                    <GeminiResultCard key={result.id} result={result} />
+                  ))}
                 </div>
               )}
 
-              {results.map((item) => (
-                <ResultCard
-                  item={item}
-                  key={item.id}
-                  onFreshPrimary={handlePrimaryAction}
-                  onSecondary={handleSecondaryAction}
-                  onSpoiledPrimary={handleSpoiledPrimary}
-                />
-              ))}
+              {/* Original Demo Results */}
+              {results.length > 0 && (
+                <div className="demo-section">
+                  <h4>📱 Demo Results</h4>
+                  {results.map((item) => (
+                    <ResultCard
+                      item={item}
+                      key={item.id}
+                      onFreshPrimary={handlePrimaryAction}
+                      onSecondary={handleSecondaryAction}
+                      onSpoiledPrimary={handleSpoiledPrimary}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!results.length && !geminiResults.length && (
+                <div className="empty-state">
+                  <span className="big">🌿</span>
+                  <span>Scan food to see results here</span>
+                  <button 
+                    className="test-btn"
+                    onClick={addTestDetection}
+                    style={{
+                      marginTop: '12px',
+                      padding: '8px 16px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🧪 Add Test Detection
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -349,6 +558,58 @@ function DashboardPage() {
         </div>
       </main>
     </>
+  );
+}
+
+function GeminiResultCard({ result }) {
+  const safeToEat = result.safe_to_eat?.toLowerCase().includes('yes');
+  const communityShare = result.community_share?.toLowerCase().includes('yes');
+
+  return (
+    <div className="gemini-result-card">
+      <div className="result-header">
+        <div className="result-title">
+          <h4>🍎 {result.name}</h4>
+          <div className="confidence-badge">
+            {(result.confidence * 100).toFixed(0)}% confidence
+          </div>
+        </div>
+        <div className="timestamp">
+          {new Date(result.timestamp).toLocaleTimeString()}
+        </div>
+      </div>
+      
+      <div className="result-details">
+        <div className="detail-row">
+          <span className="label">Quality:</span>
+          <span className="value quality">{result.quality}</span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Quantity:</span>
+          <span className="value">{result.quantity}</span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Condition:</span>
+          <span className="value">{result.condition}</span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Safe to Eat:</span>
+          <span className={`value safety ${safeToEat ? 'safe' : 'unsafe'}`}>
+            {safeToEat ? '✅' : '⚠️'} {result.safe_to_eat}
+          </span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="label">Community Share:</span>
+          <span className={`value community ${communityShare ? 'shareable' : 'not-shareable'}`}>
+            {communityShare ? '🤝' : '❌'} {result.community_share}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -443,7 +704,7 @@ function LoginPage() {
       return undefined;
     }
     const timeout = window.setTimeout(() => {
-      window.location.href = "./index.html";
+      window.location.href = "./dashboard.html";
     }, 1500);
     return () => clearTimeout(timeout);
   }, [success]);
@@ -646,6 +907,583 @@ function LoginPage() {
             </div>
           </div>
         </div>
+      </div>
+    </>
+  );
+}
+
+function OverviewDashboardPage() {
+  const [counts, setCounts] = useState({
+    donated: 0,
+    co2: 0,
+    families: 0,
+    diverted: 0,
+    freshness: 0,
+  });
+
+  useEffect(() => {
+    const targets = { donated: 47, co2: 12, families: 8, diverted: 3, freshness: 82 };
+    const timers = Object.entries(targets).map(([key, target], index) =>
+      window.setTimeout(() => {
+        let current = 0;
+        const step = Math.ceil(target / 40);
+        const timer = window.setInterval(() => {
+          current = Math.min(current + step, target);
+          setCounts((state) => ({ ...state, [key]: current }));
+          if (current >= target) {
+            window.clearInterval(timer);
+          }
+        }, key === "freshness" ? 20 : 35);
+      }, index === 4 ? 800 : 0),
+    );
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, []);
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
+  const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
+  const donated = [18, 24, 31, 28, 38, 47];
+  const wasted = [12, 9, 7, 6, 5, 3];
+  const maxVal = Math.max(...donated, ...wasted);
+  const circumference = 314;
+  const ringOffset = circumference - (counts.freshness / 100) * circumference;
+
+  return (
+    <>
+      <nav className="dash-nav">
+        <a className="logo" href="./dashboard.html">
+          Fresh<em>Loop</em>
+        </a>
+        <div className="dash-nav-right">
+          <a className="dash-nav-link" href="#">
+            History
+          </a>
+          <a className="dash-nav-link" href="#">
+            Network
+          </a>
+          <a className="dash-nav-link" href="#">
+            Settings
+          </a>
+          <a className="btn-logout" href="./login.html">
+            Logout
+          </a>
+          <div className="dash-nav-avatar" title="Sarah M.">
+            S
+          </div>
+        </div>
+      </nav>
+
+      <div className="dash-wrap">
+        <section className="dash-hero">
+          <div>
+            <div className="dash-hero-greeting">Good morning, Sarah 🌿</div>
+            <h1 className="dash-hero-title">
+              Your <em>impact</em> this
+              <br />
+              month is growing.
+            </h1>
+            <p className="dash-hero-sub">
+              You&apos;ve helped divert food from landfill, fed neighbours, and contributed to a healthier community.
+              Here&apos;s your full picture.
+            </p>
+          </div>
+          <div className="dash-hero-date">
+            <strong>{today}</strong>
+            <span>Week 9 of 52</span>
+            <span>Spring harvest season</span>
+          </div>
+        </section>
+
+        <section className="dash-cta-grid">
+          <a className="dash-cta-card detect" href="./index.html">
+            <div className="dash-cta-icon">🔬</div>
+            <div className="dash-cta-label">AI Detection</div>
+            <div className="dash-cta-title">
+              Scan Food
+              <br />
+              for Spoilage
+            </div>
+            <div className="dash-cta-desc">
+              Point your camera at any food item. Our model detects freshness in seconds and alerts local food banks
+              if it&apos;s still good.
+            </div>
+            <div className="dash-cta-arrow">→</div>
+          </a>
+
+          <a className="dash-cta-card recipes" href="./recipe.html">
+            <div className="dash-cta-icon">👨‍🍳</div>
+            <div className="dash-cta-label">Smart Kitchen</div>
+            <div className="dash-cta-title">
+              Recipe
+              <br />
+              Recommender
+            </div>
+            <div className="dash-cta-desc">
+              Tell us what&apos;s in your fridge or pantry. We&apos;ll suggest recipes to use ingredients before they
+              expire.
+            </div>
+            <div className="dash-cta-arrow">→</div>
+          </a>
+        </section>
+
+        <section className="dash-stats-grid">
+          <StatSummaryCard color="green" label="Items Donated" value={counts.donated} delta="+12 from last month" />
+          <StatSummaryCard color="sage" label="CO2 Prevented" value={counts.co2} unit="kg" delta="Equiv. to 48 km driven" />
+          <StatSummaryCard color="forest" label="Families Helped" value={counts.families} delta="3 new connections" />
+          <StatSummaryCard color="amber" label="Waste Diverted" value={counts.diverted} unit="kg" delta="Down 18% - great work!" down />
+        </section>
+
+        <section className="dash-section-grid">
+          <div className="dash-panel">
+            <div className="dash-panel-header">
+              <div className="dash-panel-title">Donations vs. Waste</div>
+              <button className="dash-panel-action" type="button">
+                Last 6 months
+              </button>
+            </div>
+
+            <div className="dash-chart-wrap">
+              <div className="dash-chart-bars">
+                {months.map((month, index) => (
+                  <div className="dash-chart-col" key={month}>
+                    <div className="dash-chart-stack">
+                      <div
+                        className="dash-chart-bar donated"
+                        style={{ height: `${(donated[index] / maxVal) * 130}px` }}
+                        title={`Donated: ${donated[index]} items`}
+                      />
+                      <div
+                        className="dash-chart-bar wasted"
+                        style={{ height: `${(wasted[index] / maxVal) * 130}px` }}
+                        title={`Wasted: ${wasted[index]} items`}
+                      />
+                    </div>
+                    <div className="dash-chart-month">{month}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="dash-chart-legend">
+              <div className="dash-legend-item">
+                <div className="dash-legend-dot donated" />
+                Donated
+              </div>
+              <div className="dash-legend-item">
+                <div className="dash-legend-dot wasted" />
+                Wasted
+              </div>
+            </div>
+          </div>
+
+          <div className="dash-panel">
+            <div className="dash-panel-header">
+              <div className="dash-panel-title">Recent Donations</div>
+              <button className="dash-panel-action" type="button">
+                View all
+              </button>
+            </div>
+            {[
+              ["🥦", "Broccoli + Spinach", "→ City Food Bank", "1.2 kg", "2h ago"],
+              ["🍞", "Bread Loaf", "→ Neighbour Sarah K.", "0.5 kg", "Yesterday"],
+              ["🍎", "Apples × 6", "→ Sunshine Shelter", "0.9 kg", "2 days ago"],
+              ["🥕", "Carrots + Potatoes", "→ City Food Bank", "2.1 kg", "4 days ago"],
+              ["🍋", "Lemons × 4", "→ Neighbour Tom K.", "0.3 kg", "1 week ago"],
+            ].map(([emoji, name, to, qty, time], index) => (
+              <div className="dash-donation-item" key={`${name}-${index}`}>
+                <div className="dash-donation-emoji">{emoji}</div>
+                <div className="dash-donation-info">
+                  <div className="dash-donation-name">{name}</div>
+                  <div className="dash-donation-to">{to}</div>
+                </div>
+                <div className="dash-donation-meta">
+                  <div className="dash-donation-qty">{qty}</div>
+                  <div className="dash-donation-time">{time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="dash-bottom-grid">
+          <div className="dash-panel">
+            <div className="dash-panel-header">
+              <div className="dash-panel-title">Freshness Score</div>
+            </div>
+            <div className="dash-ring-wrap">
+              <svg className="dash-ring-svg" height="130" viewBox="0 0 130 130" width="130">
+                <defs>
+                  <linearGradient id="dashRingGrad" x1="0%" x2="100%" y1="0%" y2="0%">
+                    <stop offset="0%" stopColor="#3aab6e" />
+                    <stop offset="100%" stopColor="#2e8c5a" />
+                  </linearGradient>
+                </defs>
+                <circle className="dash-ring-track" cx="65" cy="65" r="50" />
+                <circle
+                  className="dash-ring-fill"
+                  cx="65"
+                  cy="65"
+                  r="50"
+                  style={{ strokeDashoffset: ringOffset }}
+                />
+              </svg>
+              <div className="dash-ring-label">
+                <span className="dash-ring-num">{counts.freshness}</span>
+                <span className="dash-ring-sub">/ 100</span>
+              </div>
+            </div>
+            <div className="dash-center-copy">
+              Your household food freshness
+              <br />
+              is <strong>excellent</strong> this week. Keep it up!
+            </div>
+          </div>
+
+          <div className="dash-panel">
+            <div className="dash-panel-header">
+              <div className="dash-panel-title">Your Network</div>
+              <button className="dash-panel-action" type="button">
+                Manage
+              </button>
+            </div>
+            {[
+              ["C", "City Food Bank", "0.4 mi · Open now", "24 items", "linear-gradient(135deg,#3a6e3a,#5a9e5a)"],
+              ["S", "Sunshine Shelter", "1.2 mi · All produce", "11 items", "linear-gradient(135deg,#5a7e3a,#7aae5a)"],
+              ["S", "Sarah K.", "Neighbour · 3 doors down", "8 items", "linear-gradient(135deg,#7aaa5a,#aaca7a)"],
+              ["T", "Tom K.", "Neighbour · Next block", "4 items", "linear-gradient(135deg,#2e8c5a,#3aab6e)"],
+            ].map(([avatar, name, role, items, background]) => (
+              <div className="dash-community-row" key={name}>
+                <div className="dash-community-avatar" style={{ background }}>
+                  {avatar}
+                </div>
+                <div className="dash-community-info">
+                  <div className="dash-community-name">{name}</div>
+                  <div className="dash-community-role">{role}</div>
+                </div>
+                <div className="dash-community-items">{items}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="dash-panel">
+            <div className="dash-panel-header">
+              <div className="dash-panel-title">Fresh Tips</div>
+            </div>
+            {[
+              ["❄️", "Store berries unwashed", "moisture accelerates mould. Rinse only just before eating."],
+              ["🧅", "Keep onions away from potatoes", "they release gases that cause each other to spoil faster."],
+              ["🌿", "Herb bouquet trick", "stand fresh herbs in a glass of water like flowers; they'll last 2x longer."],
+              ["📅", "FIFO method", "place newer groceries behind older ones so you reach for what expires first."],
+            ].map(([icon, title, text]) => (
+              <div className="dash-tip-item" key={title}>
+                <div className="dash-tip-icon">{icon}</div>
+                <div className="dash-tip-text">
+                  <strong>{title}</strong> - {text}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
+
+function StatSummaryCard({ color, label, value, unit, delta, down = false }) {
+  return (
+    <div className={`dash-summary-card ${color}`}>
+      <div className="dash-summary-label">{label}</div>
+      <div className="dash-summary-value">
+        {value}
+        {unit ? <span className="dash-summary-unit">{unit}</span> : null}
+      </div>
+      <div className={`dash-summary-delta ${down ? "down" : ""}`.trim()}>
+        <span>{down ? "↓" : "↑"}</span>
+        {delta}
+      </div>
+    </div>
+  );
+}
+
+function RecipePage() {
+  const [tags, setTags] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const [filters, setFilters] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState([]);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [saved, setSaved] = useState([]);
+
+  const quickAdd = ["Eggs", "Chicken", "Tomatoes", "Garlic", "Onion", "Pasta", "Rice", "Spinach", "Carrots", "Cheese", "Potatoes", "Lemon"];
+  const filterOptions = ["Vegetarian", "Vegan", "Gluten-Free", "Quick"];
+
+  const normalizeTag = (value) => {
+    const trimmed = value.trim().replace(/,$/, "");
+    if (!trimmed) {
+      return "";
+    }
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+  };
+
+  const addTag = (value) => {
+    const next = normalizeTag(value);
+    if (!next || tags.includes(next)) {
+      return;
+    }
+    setTags((current) => [...current, next]);
+    setInputValue("");
+  };
+
+  const toggleFilter = (value) => {
+    setFilters((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
+  };
+
+  const generateRecipes = () => {
+    if (!tags.length) {
+      return;
+    }
+    setLoading(true);
+    window.setTimeout(() => {
+      const scored = RECIPE_DATABASE.map((recipe) => {
+        const matches = recipe.usedIngredients.filter((ingredient) =>
+          tags.some(
+            (tag) =>
+              tag.toLowerCase().includes(ingredient.toLowerCase()) ||
+              ingredient.toLowerCase().includes(tag.toLowerCase()),
+          ),
+        );
+        const filterOk =
+          !filters.length ||
+          filters.every((filter) =>
+            filter === "Quick"
+              ? parseInt(recipe.time, 10) < 30
+              : recipe.badges.some((badge) => badge.toLowerCase().includes(filter.toLowerCase())),
+          );
+        return { ...recipe, score: matches.length + (filterOk ? 0 : -5), matchedCount: matches.length };
+      })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+      setResults(scored);
+      setLoading(false);
+    }, 1200);
+  };
+
+  const handleInputKeyDown = (event) => {
+    if ((event.key === "Enter" || event.key === ",") && inputValue.trim()) {
+      event.preventDefault();
+      addTag(inputValue);
+    }
+    if (event.key === "Backspace" && !inputValue && tags.length) {
+      setTags((current) => current.slice(0, -1));
+    }
+  };
+
+  const toggleSaved = (title) => {
+    setSaved((current) => (current.includes(title) ? current.filter((item) => item !== title) : [...current, title]));
+  };
+
+  return (
+    <>
+      <nav className="rec-nav">
+        <a className="logo" href="./dashboard.html">
+          Fresh<em>Loop</em>
+        </a>
+        <div className="rec-nav-right">
+          <a className="rec-nav-link" href="./dashboard.html">Dashboard</a>
+          <a className="rec-nav-link" href="./index.html">Detect</a>
+          <a className="rec-nav-link active" href="./recipe.html">Recipes</a>
+          <a className="btn-logout" href="./login.html">Logout</a>
+          <div className="dash-nav-avatar">S</div>
+        </div>
+      </nav>
+
+      <div className="rec-page">
+        <section className="rec-header">
+          <div className="rec-eyebrow">Smart Kitchen · Zero Waste</div>
+          <h1 className="rec-title">
+            What can you <em>cook</em>
+            <br />
+            with what you have?
+          </h1>
+          <p className="rec-sub">
+            Add the ingredients in your fridge or pantry. We&apos;ll generate three recipes so nothing goes to waste.
+          </p>
+        </section>
+
+        <section className="rec-input-zone">
+          <div className="rec-zone-label">Your Ingredients</div>
+          <div className="rec-tag-field">
+            {tags.map((tag) => (
+              <span className="rec-tag" key={tag}>
+                {tag}
+                <button className="rec-tag-remove" onClick={() => setTags((current) => current.filter((item) => item !== tag))} type="button">
+                  ✕
+                </button>
+              </span>
+            ))}
+            <input
+              className="rec-tag-input"
+              onChange={(event) => setInputValue(event.target.value)}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Type an ingredient and press Enter..."
+              value={inputValue}
+            />
+          </div>
+
+          <div className="rec-quick-add">
+            <span className="rec-quick-label">Quick add:</span>
+            {quickAdd.map((item) => (
+              <button className="rec-quick-chip" key={item} onClick={() => addTag(item)} type="button">
+                {item}
+              </button>
+            ))}
+          </div>
+
+          <div className="rec-filters">
+            <span className="rec-filters-label">Dietary:</span>
+            {filterOptions.map((filter) => (
+              <button
+                className={`rec-filter-toggle ${filters.includes(filter) ? "active" : ""}`.trim()}
+                key={filter}
+                onClick={() => toggleFilter(filter)}
+                type="button"
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+
+          <button className={`rec-generate ${loading ? "loading" : ""}`.trim()} disabled={loading} onClick={generateRecipes} type="button">
+            <span className="rec-btn-icon">✨</span>
+            <span className="rec-btn-text">Generate Recipes</span>
+            <span className="spinner" />
+          </button>
+        </section>
+
+        {!results.length ? (
+          <section className="rec-empty-state">
+            <span className="rec-empty-illustration">🥘</span>
+            <div className="rec-empty-title">Your recipes will appear here</div>
+            <p className="rec-empty-sub">Add at least one ingredient and generate suggestions.</p>
+          </section>
+        ) : (
+          <section className="rec-results">
+            <div className="rec-results-header">
+              <div className="rec-results-title">
+                Three <em>recipes</em> for you
+              </div>
+              <div className="rec-results-count">Based on {tags.length} ingredient{tags.length > 1 ? "s" : ""}</div>
+            </div>
+
+            <div className="rec-grid">
+              {results.map((recipe, index) => (
+                <div className="rec-card" key={recipe.title}>
+                  <div className={`rec-card-band band-${index + 1}`} />
+                  <div className="rec-card-body">
+                    <span className="rec-card-emoji">{recipe.emoji}</span>
+                    <div className="rec-card-badges">
+                      {recipe.badges.map((badge, badgeIndex) => (
+                        <span className={`rec-card-badge ${badgeIndex === 0 ? "highlight" : ""}`.trim()} key={badge}>
+                          {badge}
+                        </span>
+                      ))}
+                      <span className="rec-card-badge">Uses {recipe.matchedCount} of your items</span>
+                    </div>
+                    <div className="rec-card-title">{recipe.title}</div>
+                    <div className="rec-card-desc">{recipe.description}</div>
+                    <div className="rec-card-ingredients">
+                      {recipe.usedIngredients.map((ingredient) => {
+                        const matched = tags.some(
+                          (tag) =>
+                            tag.toLowerCase().includes(ingredient.toLowerCase()) ||
+                            ingredient.toLowerCase().includes(tag.toLowerCase()),
+                        );
+                        return (
+                          <span className={`rec-ing-pill ${matched ? "used" : "extra"}`.trim()} key={ingredient}>
+                            {ingredient}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div className="rec-card-stats">
+                      <div><strong>{recipe.time}</strong><span>Cook time</span></div>
+                      <div><strong>{recipe.servings}</strong><span>Servings</span></div>
+                      <div><strong>{recipe.calories}</strong><span>Calories</span></div>
+                    </div>
+                    <div className="rec-card-actions">
+                      <button className="rec-primary-btn" onClick={() => setSelectedRecipe(recipe)} type="button">
+                        View Recipe
+                      </button>
+                      <button className={`rec-secondary-btn ${saved.includes(recipe.title) ? "saved" : ""}`.trim()} onClick={() => toggleSaved(recipe.title)} type="button">
+                        ♥
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+
+      <div
+        aria-hidden={!selectedRecipe}
+        className={`rec-modal-backdrop ${selectedRecipe ? "open" : ""}`.trim()}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            setSelectedRecipe(null);
+          }
+        }}
+      >
+        {selectedRecipe ? (
+          <div className="rec-modal">
+            <div className="rec-modal-inner">
+              <div className="rec-modal-header">
+                <div>
+                  <span className="rec-modal-emoji">{selectedRecipe.emoji}</span>
+                  <div className="rec-modal-title">{selectedRecipe.title}</div>
+                </div>
+                <button className="rec-modal-close" onClick={() => setSelectedRecipe(null)} type="button">
+                  ✕
+                </button>
+              </div>
+              <div className="rec-modal-stats">
+                <div><strong>{selectedRecipe.time}</strong><span>Cook time</span></div>
+                <div><strong>{selectedRecipe.servings}</strong><span>Servings</span></div>
+                <div><strong>{selectedRecipe.calories} cal</strong><span>Per serving</span></div>
+                <div><strong>{selectedRecipe.difficulty}</strong><span>Difficulty</span></div>
+              </div>
+              <div className="rec-modal-section">Ingredients</div>
+              <div className="rec-modal-ingredients">
+                {[...selectedRecipe.usedIngredients, ...selectedRecipe.extraIngredients].map((ingredient) => (
+                  <span
+                    className={`rec-ing-pill ${selectedRecipe.usedIngredients.includes(ingredient) ? "used" : "extra"}`.trim()}
+                    key={ingredient}
+                  >
+                    {ingredient}
+                  </span>
+                ))}
+              </div>
+              <div className="rec-modal-section">Instructions</div>
+              <div className="rec-modal-steps">
+                {selectedRecipe.steps.map((step, index) => (
+                  <div className="rec-step" key={`${selectedRecipe.title}-${index}`}>
+                    <div className="rec-step-num">{index + 1}</div>
+                    <div className="rec-step-text">{step}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </>
   );
