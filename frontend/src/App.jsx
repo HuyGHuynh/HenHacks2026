@@ -224,6 +224,48 @@ const PAGE = (() => {
 })();
 
 function App() {
+  // Shared posts state for recipe help requests to create community posts
+  // Load from localStorage or use default SOCIAL_POSTS
+  const [posts, setPosts] = useState(() => {
+    try {
+      const savedPosts = localStorage.getItem('communityPosts');
+      if (savedPosts) {
+        const parsed = JSON.parse(savedPosts);
+        console.log('Loaded posts from localStorage:', parsed.length, 'posts');
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Failed to load posts from localStorage:', error);
+    }
+    console.log('Using default SOCIAL_POSTS');
+    return SOCIAL_POSTS.map((post) => ({
+      ...post,
+      liked: false,
+      claimed: false,
+      commentsOpen: false,
+      commentDraft: "",
+    }));
+  });
+
+  // Save posts to localStorage whenever they change
+  useEffect(() => {
+    console.log('Saving posts to localStorage:', posts.length, 'posts');
+    try {
+      localStorage.setItem('communityPosts', JSON.stringify(posts));
+    } catch (error) {
+      console.error('Failed to save posts to localStorage:', error);
+    }
+  }, [posts]);
+
+  const addPost = (newPost) => {
+    console.log('addPost called with:', newPost);
+    setPosts((current) => {
+      const updated = [newPost, ...current];
+      console.log('Updated posts:', updated);
+      return updated;
+    });
+  };
+
   if (PAGE === "login") {
     return <LoginPage />;
   }
@@ -231,10 +273,10 @@ function App() {
     return <OverviewDashboardPage />;
   }
   if (PAGE === "recipe") {
-    return <RecipePage />;
+    return <RecipePage addPost={addPost} />;
   }
   if (PAGE === "social") {
-    return <SocialPage />;
+    return <SocialPage posts={posts} setPosts={setPosts} />;
   }
   return <DetectionPage />;
 }
@@ -1770,8 +1812,10 @@ function StatSummaryCard({ color, label, value, unit, delta, down = false }) {
   );
 }
 
-function RecipePage() {
-  const [tags, setTags] = useState([]);
+function RecipePage({ addPost }) {
+  console.log('RecipePage rendered, addPost:', !!addPost);
+  
+  const [tags, setTags] = useState(["chicken", "broccoli", "rice", "garlic", "olive oil"]);
   const [inputValue, setInputValue] = useState("");
   const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -2142,13 +2186,46 @@ function RecipePage() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Create a new community post
+        const newPost = {
+          id: Date.now(),
+          type: "wanting",
+          author: "You",
+          initials: "Y",
+          location: "Your location",
+          time: "Just now",
+          text: helpMessage,
+          items: [ingredientName],
+          images: ["🔍"],
+          qty: helpIngredient.quantity || "Any amount",
+          expiry: null,
+          likes: 0,
+          comments: [],
+          liked: false,
+          claimed: false,
+          commentsOpen: false,
+          commentDraft: "",
+        };
+        
+        console.log('Created new post:', newPost);
+        console.log('addPost function exists:', !!addPost);
+        
+        // Add post to community feed
+        if (addPost) {
+          addPost(newPost);
+          console.log('Post added to community feed');
+        } else {
+          console.error('addPost function is not available');
+        }
+        
         // Copy to clipboard and show success
         navigator.clipboard.writeText(helpMessage).then(() => {
-          alert('✅ Help request posted successfully! Message copied to clipboard.');
+          alert('✅ Help request posted to community feed! Message copied to clipboard.');
           setShowHelpModal(false);
         }).catch(err => {
           console.error('Failed to copy message:', err);
-          alert('✅ Help request posted successfully!\n\n' + helpMessage);
+          alert('✅ Help request posted to community feed!\n\n' + helpMessage);
           setShowHelpModal(false);
         });
       } else {
@@ -3329,18 +3406,12 @@ function RecipePage() {
   );
 }
 
-function SocialPage() {
+function SocialPage({ posts, setPosts }) {
+  console.log('SocialPage rendered with posts:', posts?.length, 'posts');
+  
   const [postType, setPostType] = useState("giving");
   const [feedFilter, setFeedFilter] = useState("all");
-  const [posts, setPosts] = useState(
-    SOCIAL_POSTS.map((post) => ({
-      ...post,
-      liked: false,
-      claimed: false,
-      commentsOpen: false,
-      commentDraft: "",
-    })),
-  );
+  const [filterOpen, setFilterOpen] = useState(false);
   const [compose, setCompose] = useState({ text: "", items: "", qty: "", expiry: "" });
   const [toast, setToast] = useState("");
 
@@ -3351,6 +3422,19 @@ function SocialPage() {
     const timer = window.setTimeout(() => setToast(""), 2500);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!filterOpen) return undefined;
+    
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.soc-filter-dropdown')) {
+        setFilterOpen(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [filterOpen]);
 
   const visiblePosts = posts.filter((post) => {
     if (feedFilter === "all") return true;
@@ -3426,27 +3510,6 @@ function SocialPage() {
           </div>
 
           <div className="soc-sidebar-section">
-            <div className="soc-sidebar-title">Browse</div>
-            {[
-              ["all", "All Posts", posts.length],
-              ["giving", "Giving Away", posts.filter((post) => post.type === "giving").length],
-              ["wanting", "Looking For", posts.filter((post) => post.type === "wanting").length],
-              ["nearby", "Nearby", posts.filter((post) => post.location.includes("0.")).length],
-              ["expiring", "Expiring", posts.filter((post) => post.expiry).length],
-            ].map(([key, label, count]) => (
-              <button
-                className={`soc-filter-btn ${feedFilter === key ? "active" : ""}`.trim()}
-                key={key}
-                onClick={() => setFeedFilter(key)}
-                type="button"
-              >
-                <span>{label}</span>
-                <span className="count">{count}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="soc-sidebar-section">
             <div className="soc-sidebar-title">Active Neighbors</div>
             {[
               ["T", "Tom K.", "0.2 mi away"],
@@ -3518,23 +3581,54 @@ function SocialPage() {
             </div>
           </div>
 
-          <div className="soc-feed-filter-bar">
-            {[
-              ["all", "All"],
-              ["giving", "Giving"],
-              ["wanting", "Looking For"],
-              ["expiring", "Expiring"],
-              ["nearby", "Nearby"],
-            ].map(([key, label]) => (
-              <button
-                className={`soc-feed-filter ${feedFilter === key ? "active" : ""}`.trim()}
-                key={key}
-                onClick={() => setFeedFilter(key)}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
+          <div className="soc-filter-dropdown">
+            <button 
+              className="soc-filter-btn" 
+              onClick={() => setFilterOpen(!filterOpen)}
+              type="button"
+            >
+              <span>Filter: {feedFilter === "all" ? "All Posts" : feedFilter === "giving" ? "Giving" : feedFilter === "wanting" ? "Looking For" : feedFilter === "expiring" ? "Expiring Soon" : "Nearby"}</span>
+              <span className="soc-filter-arrow">{filterOpen ? "▲" : "▼"}</span>
+            </button>
+            {filterOpen && (
+              <div className="soc-filter-menu">
+                <button 
+                  className={`soc-filter-option ${feedFilter === "all" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("all"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  All Posts
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "giving" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("giving"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Giving
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "wanting" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("wanting"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Looking For
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "expiring" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("expiring"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Expiring Soon
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "nearby" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("nearby"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Nearby
+                </button>
+              </div>
+            )}
           </div>
 
           {visiblePosts.map((post) => (
@@ -3660,18 +3754,6 @@ function SocialPage() {
         </main>
 
         <aside className="soc-sidebar-right">
-          <div className="soc-widget">
-            <div className="soc-widget-title">Live Activity</div>
-            {[
-              "Tom K. posted broccoli & kale available now",
-              "Amy C. is looking for eggs or dairy",
-              "Maria L. claimed a sourdough loaf from James",
-              "You gave away 4 lemons · 0 waste",
-            ].map((item) => (
-              <div className="soc-ticker-item" key={item}>{item}</div>
-            ))}
-          </div>
-
           <div className="soc-widget">
             <div className="soc-widget-title">Community Impact</div>
             {[

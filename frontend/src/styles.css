@@ -2816,6 +2816,9 @@ main {
   padding-right: 2rem;
   padding-bottom: 3rem;
   padding-left: 2rem;
+  max-width: 680px;
+  margin: 0 auto;
+  display: block;
 }
 
 .soc-profile-card,
@@ -3087,6 +3090,78 @@ main {
 
 .soc-post-btn.wanting { background: #a06820; }
 
+/* Filter Dropdown */
+.soc-filter-dropdown {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.soc-filter-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.soc-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--moss);
+}
+
+.soc-filter-arrow {
+  color: var(--text3);
+  font-size: 0.6rem;
+}
+
+.soc-filter-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 100;
+  margin-top: 0.25rem;
+}
+
+.soc-filter-option {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.68rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border);
+}
+
+.soc-filter-option:last-child {
+  border-bottom: none;
+}
+
+.soc-filter-option:hover {
+  background: rgba(87, 130, 95, 0.1);
+}
+
+.soc-filter-option.active {
+  background: var(--moss);
+  color: #fff;
+  font-weight: 600;
+}
+
 .soc-feed-filter-bar {
   flex-wrap: wrap;
   margin-bottom: 1rem;
@@ -3108,25 +3183,85 @@ main {
 }
 
 .soc-post-card {
-  margin-bottom: 1rem;
-  padding: 1.4rem 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.05);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
-.soc-post-card.giving { border-left: 4px solid var(--accent); }
-.soc-post-card.wanting { border-left: 4px solid var(--warn); }
+.soc-post-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 12px 20px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+.soc-post-card .soc-post-header {
+  padding: 1rem 1.25rem 0.75rem 1.25rem;
+}
+
+.soc-post-card .soc-post-body {
+  padding: 0 1.25rem 0.75rem 1.25rem;
+}
+
+.soc-post-card .soc-food-items {
+  padding: 0 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.soc-post-card .soc-post-images {
+  padding: 0 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.soc-post-card .soc-post-info-row {
+  padding: 0 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.soc-post-card .soc-post-actions {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding: 0.75rem 1.25rem;
+  margin: 0;
+  background: rgba(0,0,0,0.02);
+}
+
+.soc-post-card.giving { 
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+}
+
+.soc-post-card.wanting { 
+  border-left: 4px solid var(--warn);
+  border-radius: 12px;
+}
 
 .soc-post-header {
   display: flex;
   gap: 0.85rem;
   align-items: flex-start;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .soc-post-avatar {
-  width: 40px;
-  height: 40px;
-  font-size: 1rem;
-  border: 2px solid var(--accentlt);
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--moss));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .soc-post-author-info {
@@ -3377,6 +3512,12 @@ main {
   .soc-sidebar-right {
     display: none;
   }
+
+  .soc-feed {
+    max-width: 600px;
+    padding-right: 1.5rem;
+    padding-left: 1.5rem;
+  }
 }
 
 @media (max-width: 900px) {
@@ -3390,6 +3531,12 @@ main {
 
   .soc-sidebar-left {
     display: none;
+  }
+
+  .soc-feed {
+    max-width: 100%;
+    padding-right: 1rem;
+    padding-left: 1rem;
   }
 }
 
@@ -3407,5 +3554,20 @@ main {
 
   .soc-feed {
     padding: 1.2rem 1rem 3rem;
+    max-width: 100%;
+  }
+
+  .soc-post-card {
+    margin-bottom: 1.25rem;
+  }
+
+  .soc-post-card .soc-post-header,
+  .soc-post-card .soc-post-body,
+  .soc-post-card .soc-food-items,
+  .soc-post-card .soc-post-images,
+  .soc-post-card .soc-post-info-row,
+  .soc-post-card .soc-post-actions {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
