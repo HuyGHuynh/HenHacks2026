@@ -318,7 +318,7 @@ function DetectionPage({ addPost, setPosts }) {
 
     try {
       // Call ElevenLabs API through backend
-      const response = await fetch('http://localhost:5000/api/text-to-speech', {
+      const response = await fetch(`${getApiUrl()}/api/text-to-speech`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -402,10 +402,10 @@ function DetectionPage({ addPost, setPosts }) {
           timestamp: result.timestamp
         }
       };
-      
+
       // Add the post to community feed
       addPost(newPost);
-      
+
       addNotification(
         "",
         "notif-neighbor",
@@ -1117,7 +1117,7 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
 
     try {
       // Try ElevenLabs API first
-      const response = await fetch('http://localhost:5000/api/text-to-speech', {
+      const response = await fetch(`${getApiUrl()}/api/text-to-speech`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1884,7 +1884,7 @@ function StatSummaryCard({ color, label, value, unit, delta, down = false }) {
 
 function RecipePage({ addPost }) {
   console.log('RecipePage rendered, addPost:', !!addPost);
-  
+
   const [tags, setTags] = useState(["chicken", "broccoli", "rice", "garlic", "olive oil"]);
   const [inputValue, setInputValue] = useState("");
   const [filters, setFilters] = useState([]);
@@ -1933,7 +1933,7 @@ function RecipePage({ addPost }) {
     try {
       // Call Gemini-powered recipe suggestion API
       console.log('Calling AI recipe API with ingredients:', tags);
-      const response = await fetch('http://localhost:5000/api/suggest-recipes', {
+      const response = await fetch(`${getApiUrl()}/api/suggest-recipes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -2064,7 +2064,7 @@ function RecipePage({ addPost }) {
 
     setIsReading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/text-to-speech', {
+      const response = await fetch(`${getApiUrl()}/api/text-to-speech`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -2198,7 +2198,7 @@ function RecipePage({ addPost }) {
       const ingredientName = `${helpIngredient.quantity} ${helpIngredient.unit} ${helpIngredient.name}`.trim();
 
       // Call Gemini-powered community help API
-      const response = await fetch('http://localhost:5000/api/generate-help-message', {
+      const response = await fetch(`${getApiUrl()}/api/generate-help-message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -2241,7 +2241,7 @@ function RecipePage({ addPost }) {
       const ingredientName = `${helpIngredient.quantity} ${helpIngredient.unit} ${helpIngredient.name}`.trim();
 
       // Post to community help API
-      const response = await fetch('http://localhost:5000/api/post-help-message', {
+      const response = await fetch(`${getApiUrl()}/api/post-help-message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -2256,7 +2256,7 @@ function RecipePage({ addPost }) {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Create a new community post
         const newPost = {
           id: Date.now(),
@@ -2277,10 +2277,10 @@ function RecipePage({ addPost }) {
           commentsOpen: false,
           commentDraft: "",
         };
-        
+
         console.log('Created new post:', newPost);
         console.log('addPost function exists:', !!addPost);
-        
+
         // Add post to community feed
         if (addPost) {
           addPost(newPost);
@@ -2288,7 +2288,7 @@ function RecipePage({ addPost }) {
         } else {
           console.error('addPost function is not available');
         }
-        
+
         // Copy to clipboard and show success
         navigator.clipboard.writeText(helpMessage).then(() => {
           alert('✅ Help request posted to community feed! Message copied to clipboard.');
@@ -2500,7 +2500,7 @@ function RecipePage({ addPost }) {
     if (needsDetails) {
       try {
         console.log('Fetching detailed recipe for:', recipe.title);
-        const response = await fetch('http://localhost:5000/api/get-recipe', {
+        const response = await fetch(`${getApiUrl()}/api/get-recipe`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -3478,7 +3478,7 @@ function RecipePage({ addPost }) {
 
 function SocialPage({ posts, setPosts }) {
   console.log('SocialPage rendered with posts:', posts?.length, 'posts');
-  
+
   const [postType, setPostType] = useState("giving");
   const [feedFilter, setFeedFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -3498,13 +3498,13 @@ function SocialPage({ posts, setPosts }) {
 
   useEffect(() => {
     if (!filterOpen) return undefined;
-    
+
     const handleClickOutside = (event) => {
       if (!event.target.closest('.soc-filter-dropdown')) {
         setFilterOpen(false);
       }
     };
-    
+
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [filterOpen]);
@@ -3578,14 +3578,14 @@ function SocialPage({ posts, setPosts }) {
       }));
 
       // Send posts to backend for matching
-      const response = await fetch('http://localhost:5000/api/match-ingredients', {
+      const response = await fetch(`${getApiUrl()}/api/match-ingredients`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ posts: transformedPosts })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setMatches(data);
         setShowMatches(true);
@@ -3703,8 +3703,8 @@ function SocialPage({ posts, setPosts }) {
           </div>
 
           <div className="soc-filter-dropdown">
-            <button 
-              className="soc-filter-btn" 
+            <button
+              className="soc-filter-btn"
               onClick={() => setFilterOpen(!filterOpen)}
               type="button"
             >
@@ -3713,35 +3713,35 @@ function SocialPage({ posts, setPosts }) {
             </button>
             {filterOpen && (
               <div className="soc-filter-menu">
-                <button 
+                <button
                   className={`soc-filter-option ${feedFilter === "all" ? "active" : ""}`}
                   onClick={() => { setFeedFilter("all"); setFilterOpen(false); }}
                   type="button"
                 >
                   All Posts
                 </button>
-                <button 
+                <button
                   className={`soc-filter-option ${feedFilter === "giving" ? "active" : ""}`}
                   onClick={() => { setFeedFilter("giving"); setFilterOpen(false); }}
                   type="button"
                 >
                   Giving
                 </button>
-                <button 
+                <button
                   className={`soc-filter-option ${feedFilter === "wanting" ? "active" : ""}`}
                   onClick={() => { setFeedFilter("wanting"); setFilterOpen(false); }}
                   type="button"
                 >
                   Looking For
                 </button>
-                <button 
+                <button
                   className={`soc-filter-option ${feedFilter === "expiring" ? "active" : ""}`}
                   onClick={() => { setFeedFilter("expiring"); setFilterOpen(false); }}
                   type="button"
                 >
                   Expiring Soon
                 </button>
-                <button 
+                <button
                   className={`soc-filter-option ${feedFilter === "nearby" ? "active" : ""}`}
                   onClick={() => { setFeedFilter("nearby"); setFilterOpen(false); }}
                   type="button"
@@ -3900,8 +3900,8 @@ function SocialPage({ posts, setPosts }) {
                 onClick={findMatches}
                 disabled={matchLoading}
                 type="button"
-                style={{ 
-                  width: '100%', 
+                style={{
+                  width: '100%',
                   padding: '12px',
                   fontSize: '14px',
                   opacity: matchLoading ? 0.6 : 1,
@@ -3910,12 +3910,12 @@ function SocialPage({ posts, setPosts }) {
               >
                 {matchLoading ? '🔄 Finding Matches...' : '🔍 Find Ingredient Matches'}
               </button>
-              
+
               {matches && matches.stats && (
-                <div style={{ 
-                  marginTop: '12px', 
-                  padding: '12px', 
-                  background: '#f0f9f0', 
+                <div style={{
+                  marginTop: '12px',
+                  padding: '12px',
+                  background: '#f0f9f0',
                   borderRadius: '8px',
                   fontSize: '13px'
                 }}>
@@ -3964,7 +3964,7 @@ function SocialPage({ posts, setPosts }) {
       </div>
 
       {showMatches && matches && matches.matches && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -3980,7 +3980,7 @@ function SocialPage({ posts, setPosts }) {
           }}
           onClick={() => setShowMatches(false)}
         >
-          <div 
+          <div
             style={{
               background: 'white',
               borderRadius: '12px',
@@ -3993,9 +3993,9 @@ function SocialPage({ posts, setPosts }) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
               marginBottom: '20px',
               borderBottom: '2px solid #3a6e3a',
@@ -4023,10 +4023,10 @@ function SocialPage({ posts, setPosts }) {
 
             {Object.entries(matches.matches).map(([requestId, matchList]) => {
               if (!matchList || matchList.length === 0) return null;
-              
+
               const firstMatch = matchList[0];
               return (
-                <div 
+                <div
                   key={requestId}
                   style={{
                     marginBottom: '24px',
@@ -4036,9 +4036,9 @@ function SocialPage({ posts, setPosts }) {
                     background: '#fafafa'
                   }}
                 >
-                  <div style={{ 
-                    marginBottom: '12px', 
-                    paddingBottom: '12px', 
+                  <div style={{
+                    marginBottom: '12px',
+                    paddingBottom: '12px',
                     borderBottom: '1px solid #ddd'
                   }}>
                     <div style={{ fontWeight: 'bold', color: '#e85d3d', marginBottom: '4px' }}>
@@ -4054,7 +4054,7 @@ function SocialPage({ posts, setPosts }) {
                   </div>
 
                   {matchList.map((match, idx) => (
-                    <div 
+                    <div
                       key={idx}
                       style={{
                         background: 'white',
@@ -4079,21 +4079,21 @@ function SocialPage({ posts, setPosts }) {
                           {match.match_score}% Match
                         </div>
                       </div>
-                      
+
                       <div style={{ fontSize: '14px', color: '#666', marginBottom: '6px' }}>
                         <strong>Offering:</strong> {match.offer.ingredients}
                       </div>
-                      
+
                       {match.offer.location && match.offer.location.description && (
                         <div style={{ fontSize: '13px', color: '#888', marginBottom: '6px' }}>
                           📍 {match.offer.location.description}
                         </div>
                       )}
-                      
+
                       <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', padding: '8px', background: '#f9f9f9', borderRadius: '4px' }}>
                         <strong>Matched Items:</strong> {match.matched_ingredients.join(', ')}
                       </div>
-                      
+
                       <div style={{ fontSize: '13px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>
                         💡 {match.reason}
                       </div>
