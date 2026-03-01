@@ -228,7 +228,7 @@ For EACH item you detect, provide:
             4. Quantity: [Small/Medium/Large portion]
             5. Condition: [Ripe/Raw/Cooked/Spoiled/Moldy/etc.]
             6. Safe to Eat: [Yes/No with reason]
-            7. Community Share: [Yes/No - suitable for sharing/donating to community]
+            7. Community Share: [Yes/No - suitable for sharing/donating to community based on the food quality and condition]
             
 Format each detection as:
             ITEM: [name]
