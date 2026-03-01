@@ -1,0 +1,151 @@
+{
+  "69a4211f450b890748c54351": [
+    {
+      "request": {
+        "user_id": "alice123",
+        "ingredients": "tomato, onion, garlic",
+        "post_id": "69a4211f450b890748c54351"
+      },
+      "offer": {
+        "user_id": "grace404",
+        "ingredients": "tomato, garlic clove",
+        "location": {
+          "lat": 40.7128,
+          "lng": -74.006,
+          "description": "Downtown NYC"
+        },
+        "post_id": "69a4211f450b890748c54357"
+      },
+      "match_score": 95,
+      "matched_ingredients": [
+        "tomato",
+        "garlic"
+      ],
+      "reason": "Exact matches for tomato and garlic clove.",
+      "matched_at": "2026-03-01T06:21:09.978468"
+    },
+    {
+      "request": {
+        "user_id": "alice123",
+        "ingredients": "tomato, onion, garlic",
+        "post_id": "69a4211f450b890748c54351"
+      },
+      "offer": {
+        "user_id": "dave101",
+        "ingredients": "cherry tomato, red onion",
+        "location": {
+          "lat": 40.7128,
+          "lng": -74.006,
+          "description": "Downtown NYC"
+        },
+        "post_id": "69a4211f450b890748c54354"
+      },
+      "match_score": 85,
+      "matched_ingredients": [
+        "tomato",
+        "onion"
+      ],
+      "reason": "Cherry tomatoes and red onions are direct varieties of the requested tomato and onion.",
+      "matched_at": "2026-03-01T06:21:09.978491"
+    }
+  ],
+  "69a4211f450b890748c54352": [
+    {
+      "request": {
+        "user_id": "bob456",
+        "ingredients": "chicken breast, rice",
+        "post_id": "69a4211f450b890748c54352"
+      },
+      "offer": {
+        "user_id": "eve202",
+        "ingredients": "chicken thigh, brown rice",
+        "location": {
+          "lat": 40.758,
+          "lng": -73.9855,
+          "description": "Midtown"
+        },
+        "post_id": "69a4211f450b890748c54355"
+      },
+      "match_score": 88,
+      "matched_ingredients": [
+        "chicken thigh",
+        "brown rice"
+      ],
+      "reason": "Provides chicken thigh as a close protein substitute for chicken breast and brown rice as a direct variety of the requested rice.",
+      "matched_at": "2026-03-01T06:21:17.959767"
+    }
+  ],
+  "69a4211f450b890748c54353": [
+    {
+      "request": {
+        "user_id": "carol789",
+        "ingredients": "basil, mozzarella",
+        "post_id": "69a4211f450b890748c54353"
+      },
+      "offer": {
+        "user_id": "frank303",
+        "ingredients": "cilantro, parmesan",
+        "location": {
+          "lat": 40.7282,
+          "lng": -73.7949,
+          "description": "Queens"
+        },
+        "post_id": "69a4211f450b890748c54356"
+      },
+      "match_score": 80,
+      "matched_ingredients": [
+        "cilantro",
+        "parmesan"
+      ],
+      "reason": "Cilantro acts as a fresh herb substitute for basil, and parmesan is a related cheese that can complement or substitute for mozzarella in various recipes.",
+      "matched_at": "2026-03-01T06:21:38.175579"
+    },
+    {
+      "request": {
+        "user_id": "carol789",
+        "ingredients": "basil, mozzarella",
+        "post_id": "69a4211f450b890748c54353"
+      },
+      "offer": {
+        "user_id": "grace404",
+        "ingredients": "tomato, garlic clove",
+        "location": {
+          "lat": 40.7128,
+          "lng": -74.006,
+          "description": "Downtown NYC"
+        },
+        "post_id": "69a4211f450b890748c54357"
+      },
+      "match_score": 70,
+      "matched_ingredients": [
+        "tomato",
+        "garlic clove"
+      ],
+      "reason": "Tomato and garlic are classic culinary pairings frequently used in combination with basil and mozzarella in Mediterranean cuisine.",
+      "matched_at": "2026-03-01T06:21:38.175590"
+    },
+    {
+      "request": {
+        "user_id": "carol789",
+        "ingredients": "basil, mozzarella",
+        "post_id": "69a4211f450b890748c54353"
+      },
+      "offer": {
+        "user_id": "dave101",
+        "ingredients": "cherry tomato, red onion",
+        "location": {
+          "lat": 40.7128,
+          "lng": -74.006,
+          "description": "Downtown NYC"
+        },
+        "post_id": "69a4211f450b890748c54354"
+      },
+      "match_score": 65,
+      "matched_ingredients": [
+        "cherry tomato"
+      ],
+      "reason": "Cherry tomatoes are a primary ingredient used alongside basil and mozzarella in dishes like Caprese salad and Margherita pizza.",
+      "matched_at": "2026-03-01T06:21:38.175594"
+    }
+  ]
+}
