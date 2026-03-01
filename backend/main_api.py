@@ -24,7 +24,7 @@ from realtime_object_detection import GeminiVisionDetector
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:3000", "http://127.0.0.1:8080"])
+CORS(app, origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:3000", "http://127.0.0.1:5173", "http://127.0.0.1:8080"])
 
 # Global instances
 cooking_assistant = None
