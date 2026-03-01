@@ -34,23 +34,43 @@ class CookingAssistant:
             sys.exit(1)
     
     def create_ingredients_prompt(self, ingredients):
-        """Create a prompt for ingredient-to-dish suggestions."""
-        system_instruction = """You are a professional home chef assistant. Suggest practical, realistic meals using common household ingredients. Avoid rare or expensive ingredients unless necessary. Keep responses concise and structured."""
+        """Create a prompt for ingredient-to-dish suggestions with detailed recipes."""
+        system_instruction = """You are a professional home chef assistant. Suggest practical, realistic meals using common household ingredients. Avoid rare or expensive ingredients unless necessary. Provide both suggestions AND detailed cooking instructions."""
         
         prompt = f"""{system_instruction}
 
 I have these ingredients: {ingredients}
 
-Please suggest 4-5 dishes I can make with these ingredients. Format your response as follows:
+Please suggest 4-5 dishes I can make with these ingredients. For EACH dish, provide both a brief description AND complete cooking instructions.
+
+Format your response EXACTLY as follows:
 
 SUGGESTED DISHES:
-1. [Dish Name]: Brief description
-2. [Dish Name]: Brief description
-3. [Dish Name]: Brief description
-4. [Dish Name]: Brief description
-5. [Dish Name]: Brief description
 
-Keep suggestions realistic and use ingredients that are commonly available. Focus on dishes that don't require many additional ingredients. Only provide the dish names and descriptions, no cooking steps yet."""
+==DISH 1==
+Name: [Dish Name]
+Description: [Brief description]
+Ingredients: [Complete ingredient list]
+Steps:
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
+[Continue with all steps]
+Tips: [2-3 helpful cooking tips]
+
+==DISH 2==
+Name: [Dish Name]
+Description: [Brief description]
+Ingredients: [Complete ingredient list]
+Steps:
+1. [Step 1]
+2. [Step 2]
+[Continue with all steps]
+Tips: [2-3 helpful cooking tips]
+
+[Continue for all dishes...]
+
+Keep suggestions realistic and use ingredients that are commonly available. Focus on dishes that don't require many additional ingredients. Provide complete cooking instructions for each dish."""
         
         return prompt
     
@@ -98,36 +118,114 @@ Focus on a practical home-kitchen version using the ingredients I have available
         
         return prompt
     
-    def parse_dish_suggestions(self, response_text):
-        """Extract dish names from the AI response."""
+    def parse_dish_suggestions_with_recipes(self, response_text):
+        """Extract dish names and their complete recipes from AI response."""
         dishes = []
+        recipes = {}
+        
+        # Split response by dish sections
+        sections = response_text.split('==DISH')
+        
+        for i, section in enumerate(sections):
+            if i == 0:  # Skip the intro text
+                continue
+                
+            try:
+                # Parse each dish section
+                lines = section.strip().split('\n')
+                dish_name = None
+                description = None
+                ingredients = None
+                steps = []
+                tips = None
+                
+                current_section = None
+                
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                        
+                    if line.startswith('Name:'):
+                        dish_name = line.replace('Name:', '').strip()
+                    elif line.startswith('Description:'):
+                        description = line.replace('Description:', '').strip()
+                    elif line.startswith('Ingredients:'):
+                        ingredients = line.replace('Ingredients:', '').strip()
+                    elif line.startswith('Steps:'):
+                        current_section = 'steps'
+                    elif line.startswith('Tips:'):
+                        tips = line.replace('Tips:', '').strip()
+                        current_section = None
+                    elif current_section == 'steps' and (line.startswith(tuple('123456789')) or line.startswith('-')):
+                        step = line.lstrip('0123456789.- ').strip()
+                        if step:
+                            steps.append(step)
+                
+                # Store the parsed dish and recipe
+                if dish_name:
+                    dishes.append(dish_name)
+                    recipes[dish_name] = {
+                        'name': dish_name,
+                        'description': description or 'A delicious homemade dish',
+                        'ingredients': ingredients or 'See recipe details',
+                        'steps': steps if steps else ['Follow standard cooking methods for this dish'],
+                        'tips': tips or 'Cook with care and taste as you go'
+                    }
+                    
+            except Exception as e:
+                print(f"Error parsing dish section: {e}")
+                continue
+        
+        # Fallback if parsing fails completely
+        if not dishes:
+            print("Parsing failed, using fallback method...")
+            dishes, recipes = self.fallback_parse_dishes(response_text)
+        
+        return dishes, recipes
+    
+    def fallback_parse_dishes(self, response_text):
+        """Fallback parsing method if structured parsing fails."""
+        dishes = []
+        recipes = {}
         lines = response_text.split('\n')
         
         for line in lines:
             # Look for numbered dishes like "1. Dish Name: description"
             if line.strip() and any(line.strip().startswith(f"{i}.") for i in range(1, 10)):
-                # Extract just the dish name (everything between number and colon)
                 try:
                     dish_part = line.split(':')[0]  # Get part before colon
                     dish_name = dish_part.split('.', 1)[1].strip()  # Remove number
+                    description = ':'.join(line.split(':')[1:]).strip() if ':' in line else 'A delicious homemade dish'
+                    
                     dishes.append(dish_name)
+                    recipes[dish_name] = {
+                        'name': dish_name,
+                        'description': description,
+                        'ingredients': 'Basic ingredients as mentioned',
+                        'steps': ['Prepare ingredients', 'Cook according to standard methods', 'Season and serve'],
+                        'tips': 'Follow basic cooking principles'
+                    }
                 except:
                     pass
         
-        return dishes
+        return dishes, recipes
     
-    def select_dish_from_suggestions(self, dishes):
-        """Allow user to select a dish from suggestions."""
+    def select_dish_from_suggestions(self, dishes, recipes):
+        """Allow user to select a dish and return its recipe."""
         if not dishes:
             print("No dishes found to select from.")
-            return None
+            return None, None
             
         print("\n" + "="*50)
         print("SELECT A DISH FOR DETAILED COOKING STEPS")
         print("="*50)
         
         for i, dish in enumerate(dishes, 1):
+            description = recipes.get(dish, {}).get('description', '')
             print(f"{i}. {dish}")
+            if description:
+                print(f"   {description}")
         print(f"{len(dishes) + 1}. Return to main menu")
         
         while True:
@@ -135,16 +233,17 @@ Focus on a practical home-kitchen version using the ingredients I have available
                 choice = input(f"\nSelect a dish (1-{len(dishes) + 1}): ").strip()
                 
                 if choice.lower() in ['quit', 'exit', 'q']:
-                    return None
+                    return None, None
                     
                 choice_num = int(choice)
                 
                 if 1 <= choice_num <= len(dishes):
                     selected_dish = dishes[choice_num - 1]
+                    selected_recipe = recipes.get(selected_dish)
                     print(f"\nYou selected: {selected_dish}")
-                    return selected_dish
+                    return selected_dish, selected_recipe
                 elif choice_num == len(dishes) + 1:
-                    return None
+                    return None, None
                 else:
                     print(f"Please enter a number between 1 and {len(dishes) + 1}")
                     
@@ -152,7 +251,7 @@ Focus on a practical home-kitchen version using the ingredients I have available
                 print("Please enter a valid number")
             except KeyboardInterrupt:
                 print("\nReturning to main menu...")
-                return None
+                return None, None
     
     def get_gemini_response(self, prompt):
         """Get response from Gemini AI."""
@@ -250,38 +349,55 @@ Focus on a practical home-kitchen version using the ingredients I have available
                 choice = self.get_user_choice()
                 
                 if choice == 1:
-                    # Ingredients to dishes mode
+                    # Ingredients to dishes mode - SINGLE API CALL
                     ingredients = self.get_ingredients()
                     if ingredients:
                         print(f"\nLooking up dishes for: {ingredients}")
                         print("Please wait...")
                         
-                        # Get dish suggestions
+                        # Get dish suggestions AND detailed recipes in ONE call
                         prompt = self.create_ingredients_prompt(ingredients)
                         response = self.get_gemini_response(prompt)
                         
                         if response:
-                            self.format_output(response)
-                            
-                            # Parse dish suggestions and let user select one
-                            dishes = self.parse_dish_suggestions(response)
+                            # Parse both suggestions and recipes from single response
+                            dishes, recipes = self.parse_dish_suggestions_with_recipes(response)
                             
                             if dishes:
-                                selected_dish = self.select_dish_from_suggestions(dishes)
+                                # Display suggestions
+                                print("\n" + "="*60)
+                                print(f"FOUND {len(dishes)} DISHES FOR YOUR INGREDIENTS")
+                                print("="*60)
                                 
-                                if selected_dish:
-                                    print(f"\nGetting detailed cooking steps for: {selected_dish}")
-                                    print("Please wait...")
+                                for i, dish in enumerate(dishes, 1):
+                                    recipe = recipes.get(dish, {})
+                                    print(f"\n{i}. {dish}")
+                                    print(f"   Description: {recipe.get('description', 'A delicious dish')}")
+                                
+                                # Let user select and show detailed recipe (already fetched!)
+                                selected_dish, selected_recipe = self.select_dish_from_suggestions(dishes, recipes)
+                                
+                                if selected_dish and selected_recipe:
+                                    print("\n" + "="*60)
+                                    print(f"DETAILED COOKING GUIDE: {selected_dish.upper()}")
+                                    print("="*60)
                                     
-                                    # Get detailed cooking steps for selected dish
-                                    detail_prompt = self.create_selected_dish_prompt(selected_dish, ingredients)
-                                    detail_response = self.get_gemini_response(detail_prompt)
+                                    print(f"\n📝 INGREDIENTS:")
+                                    print(f"   {selected_recipe.get('ingredients', 'See steps below')}")
                                     
-                                    if detail_response:
-                                        print("\n" + "="*60)
-                                        print(f"DETAILED COOKING GUIDE: {selected_dish.upper()}")
-                                        print("="*60)
-                                        self.format_output(detail_response)
+                                    print(f"\n👨‍🍳 COOKING STEPS:")
+                                    steps = selected_recipe.get('steps', [])
+                                    for i, step in enumerate(steps, 1):
+                                        print(f"   {i}. {step}")
+                                    
+                                    tips = selected_recipe.get('tips')
+                                    if tips:
+                                        print(f"\n💡 COOKING TIPS:")
+                                        print(f"   {tips}")
+                                    
+                                    print("\n" + "="*60)
+                            else:
+                                print("\nNo suitable dishes found for your ingredients. Try different ingredients!")
                 
                 elif choice == 2:
                     # Dish to ingredients mode
