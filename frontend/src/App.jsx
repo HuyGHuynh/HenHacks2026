@@ -168,6 +168,16 @@ function DetectionPage() {
   const [alertState, setAlertState] = useState(null);
   const [lastResultsCount, setLastResultsCount] = useState(0);
 
+  // Dynamic API URL detection for deployment
+  const getApiUrl = () => {
+    // If we're on DigitalOcean (bytemequickly.tech), use same domain
+    if (window.location.hostname === 'bytemequickly.tech') {
+      return `${window.location.protocol}//${window.location.hostname}`;
+    }
+    // For local development, use localhost:5000
+    return 'http://localhost:5000';
+  };
+
   // Handle community sharing
   const handleCommunityShare = (result, shared) => {
     if (shared) {
@@ -207,7 +217,7 @@ function DetectionPage() {
   // Fetch Gemini results from API
   const fetchGeminiResults = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/gemini-results');
+      const response = await fetch(`${getApiUrl()}/api/gemini-results`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -234,7 +244,7 @@ function DetectionPage() {
   // Add test detection
   const addTestDetection = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/test-detection', {
+      const response = await fetch(`${getApiUrl()}/api/test-detection`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -377,7 +387,7 @@ function DetectionPage() {
 
         try {
           // Send to backend API
-          const response = await fetch('http://localhost:5000/api/analyze-image', {
+          const response = await fetch(`${getApiUrl()}/api/analyze-image`, {
             method: 'POST',
             body: formData
           });
