@@ -244,11 +244,13 @@ function DetectionPage() {
   const streamRef = useRef(null);
   const scanTimeoutRef = useRef(null);
   const alertTimeoutRef = useRef(null);
+  const badgeFadeTimeoutRef = useRef(null);
   const [scanning, setScanning] = useState(false);
   const [cameraLive, setCameraLive] = useState(false);
   const [statusLabel, setStatusLabel] = useState("Camera Ready");
   const [demoIndex, setDemoIndex] = useState(0);
   const [lastResult, setLastResult] = useState(null);
+  const [badgeFading, setBadgeFading] = useState(false);
   const [results, setResults] = useState([]);
   const [geminiResults, setGeminiResults] = useState([]);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
@@ -437,6 +439,9 @@ function DetectionPage() {
       if (alertTimeoutRef.current) {
         clearTimeout(alertTimeoutRef.current);
       }
+      if (badgeFadeTimeoutRef.current) {
+        clearTimeout(badgeFadeTimeoutRef.current);
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
@@ -445,7 +450,7 @@ function DetectionPage() {
 
   const finishScan = (food) => {
     setScanning(false);
-    setLastResult(food);
+    showBadgeWithFade(food);
     const result = {
       ...food,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -582,7 +587,7 @@ function DetectionPage() {
                   days: firstResult.condition,
                   confidence: Math.round(firstResult.confidence * 100)
                 };
-                setLastResult(mockFood);
+                showBadgeWithFade(mockFood);
               }
             } else {
               setStatusLabel(`Analysis failed: ${data.error}`);
@@ -645,6 +650,29 @@ function DetectionPage() {
       },
       ...current,
     ]);
+  };
+
+  const showBadgeWithFade = (food) => {
+    // Clear any existing fade timeout
+    if (badgeFadeTimeoutRef.current) {
+      clearTimeout(badgeFadeTimeoutRef.current);
+    }
+
+    // Show the badge immediately
+    setLastResult(food);
+    setBadgeFading(false);
+
+    if (food) {
+      // Start fade after 4 seconds
+      badgeFadeTimeoutRef.current = setTimeout(() => {
+        setBadgeFading(true);
+        // Remove completely after fade animation
+        setTimeout(() => {
+          setLastResult(null);
+          setBadgeFading(false);
+        }, 500);
+      }, 4000);
+    }
   };
 
   const handlePrimaryAction = (item) => {
@@ -730,21 +758,25 @@ function DetectionPage() {
               <div className="corner corner-br" />
             </div>
 
-            <div
-              className={`detection-badge ${lastResult ? `show ${lastResult.status}` : ""}`.trim()}
-              aria-hidden={!lastResult}
-            >
-              <div className="badge-item">{lastResult ? lastResult.name : "Apple"}</div>
-              <div className={`badge-status ${lastResult?.status || "fresh"}`}>
-                {lastResult
-                  ? lastResult.status === "fresh"
+            {lastResult && (
+              <div
+                className={`detection-badge show ${lastResult.status}`}
+                style={{
+                  opacity: badgeFading ? '0' : '1',
+                  transform: `translate(-50%, -50%) ${badgeFading ? 'translateY(-10px)' : ''} scale(1)`,
+                  transition: 'opacity 0.5s ease-out, transform 0.5s ease-out'
+                }}
+              >
+                <div className="badge-item">{lastResult.name}</div>
+                <div className={`badge-status ${lastResult.status}`}>
+                  {lastResult.status === "fresh"
                     ? `Fresh - ${lastResult.days} left`
                     : lastResult.status === "warning"
                       ? `Use soon - ${lastResult.days}`
-                      : `Spoiled - ${lastResult.days}`
-                  : "Fresh - 6 days left"}
+                      : `Spoiled - ${lastResult.days}`}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className={`alert-banner ${alertState ? `${alertState.kind} show` : ""}`.trim()}>
