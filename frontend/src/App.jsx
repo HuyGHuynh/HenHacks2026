@@ -783,7 +783,7 @@ function DetectionPage({ addPost, setPosts }) {
     <>
       <header>
         <div className="logo">
-          Fresh<span>Loop</span>
+          ByteMe<span>Quickly</span>
         </div>
         <div className="header-actions">
           <div className="status-pill">
@@ -1419,7 +1419,7 @@ function LoginPage() {
       <div className="page">
         <div className="brand-panel">
           <div className="logo">
-            Fresh<em>Loop</em>
+            ByteMe<em>Quickly</em>
           </div>
 
           <div className="brand-center">
@@ -1477,7 +1477,7 @@ function LoginPage() {
                 Sign <em>in</em>
               </h2>
               <p className="form-sub">
-                New to FreshLoop? <a href="#">Create a free account</a>
+                New to ByteMeQuickly? <a href="#">Create a free account</a>
               </p>
             </div>
 
@@ -1617,7 +1617,7 @@ function OverviewDashboardPage() {
     <>
       <nav className="dash-nav">
         <a className="logo" href="./dashboard.html">
-          Fresh<em>Loop</em>
+          ByteMe<em>Quickly</em>
         </a>
         <div className="dash-nav-right">
           <a className="dash-nav-link" href="./index.html">Detect</a>
@@ -2594,7 +2594,7 @@ function RecipePage({ addPost }) {
     <>
       <nav className="rec-nav">
         <a className="logo" href="./dashboard.html">
-          Fresh<em>Loop</em>
+          ByteMe<em>Quickly</em>
         </a>
 
         {/* Reading Status Indicator */}
@@ -3601,7 +3601,7 @@ function SocialPage({ posts, setPosts }) {
     <>
       <nav className="soc-nav">
         <a className="logo" href="./dashboard.html">
-          Fresh<em>Loop</em>
+          ByteMe<em>Quickly</em>
         </a>
         <div className="soc-nav-right">
           <a className="soc-nav-link" href="./dashboard.html">Dashboard</a>
