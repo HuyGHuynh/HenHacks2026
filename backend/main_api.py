@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 from cooking_assistant_fixed import CookingAssistant
 from realtime_object_detection import GeminiVisionDetector
 from community_help import community_help_bp, initialize_community_service
+from gemini_matcher_routes import gemini_matcher_bp, initialize_matcher
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -31,6 +32,7 @@ CORS(app)
 
 # Register blueprints
 app.register_blueprint(community_help_bp, url_prefix='/api')
+app.register_blueprint(gemini_matcher_bp, url_prefix='/api')
 
 # Load environment variables
 load_dotenv()
@@ -44,12 +46,13 @@ detection_thread = None
 
 # Initialize services
 def initialize_services():
-    """Initialize cooking assistant, vision detector, and community help"""
+    """Initialize cooking assistant, vision detector, community help, and Gemini matcher"""
     global cooking_assistant, vision_detector
     try:
         cooking_assistant = CookingAssistant()
         vision_detector = GeminiVisionDetector()
         initialize_community_service()
+        initialize_matcher()
         print("✅ All services initialized successfully!")
         return True
     except Exception as e:

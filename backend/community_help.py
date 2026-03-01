@@ -28,7 +28,7 @@ class CommunityHelpConfig:
 Your task is to generate short, warm, and polite help messages for a neighborhood food-sharing app.
 
 Rules:
-- Keep it under 80 words.
+- Keep it under 15 words.
 - Sound human and natural.
 - Be friendly and appreciative.
 - Do not sound robotic.

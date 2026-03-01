@@ -224,6 +224,48 @@ const PAGE = (() => {
 })();
 
 function App() {
+  // Shared posts state for recipe help requests to create community posts
+  // Load from localStorage or use default SOCIAL_POSTS
+  const [posts, setPosts] = useState(() => {
+    try {
+      const savedPosts = localStorage.getItem('communityPosts');
+      if (savedPosts) {
+        const parsed = JSON.parse(savedPosts);
+        console.log('Loaded posts from localStorage:', parsed.length, 'posts');
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Failed to load posts from localStorage:', error);
+    }
+    console.log('Using default SOCIAL_POSTS');
+    return SOCIAL_POSTS.map((post) => ({
+      ...post,
+      liked: false,
+      claimed: false,
+      commentsOpen: false,
+      commentDraft: "",
+    }));
+  });
+
+  // Save posts to localStorage whenever they change
+  useEffect(() => {
+    console.log('Saving posts to localStorage:', posts.length, 'posts');
+    try {
+      localStorage.setItem('communityPosts', JSON.stringify(posts));
+    } catch (error) {
+      console.error('Failed to save posts to localStorage:', error);
+    }
+  }, [posts]);
+
+  const addPost = (newPost) => {
+    console.log('addPost called with:', newPost);
+    setPosts((current) => {
+      const updated = [newPost, ...current];
+      console.log('Updated posts:', updated);
+      return updated;
+    });
+  };
+
   if (PAGE === "login") {
     return <LoginPage />;
   }
@@ -231,15 +273,15 @@ function App() {
     return <OverviewDashboardPage />;
   }
   if (PAGE === "recipe") {
-    return <RecipePage />;
+    return <RecipePage addPost={addPost} />;
   }
   if (PAGE === "social") {
-    return <SocialPage />;
+    return <SocialPage posts={posts} setPosts={setPosts} />;
   }
-  return <DetectionPage />;
+  return <DetectionPage addPost={addPost} setPosts={setPosts} />;
 }
 
-function DetectionPage() {
+function DetectionPage({ addPost, setPosts }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const scanTimeoutRef = useRef(null);
@@ -331,10 +373,43 @@ function DetectionPage() {
   // Handle community sharing
   const handleCommunityShare = (result, shared) => {
     if (shared) {
+      // Create a community post with the detection data
+      const newPost = {
+        id: Date.now(),
+        type: "giving",  // User is offering this item
+        author: "Sarah M.",
+        initials: "S",
+        location: "Your location",
+        time: "Just now",
+        text: `Sharing ${result.name} detected by AI camera. ${result.quality} quality, ${result.condition} condition.`,
+        items: [result.name],
+        images: ["🎥"],  // Camera emoji to indicate AI detection
+        qty: result.quantity || "See details",
+        expiry: null,
+        likes: 0,
+        comments: [],
+        liked: false,
+        claimed: false,
+        commentsOpen: false,
+        commentDraft: "",
+        // Add detection metadata for reference
+        detectionData: {
+          quality: result.quality,
+          quantity: result.quantity,
+          condition: result.condition,
+          safe: result.safe,
+          confidence: result.confidence,
+          timestamp: result.timestamp
+        }
+      };
+      
+      // Add the post to community feed
+      addPost(newPost);
+      
       addNotification(
         "",
         "notif-neighbor",
-        "Community sharing confirmed",
+        "Posted to Community",
         `"${result.name}" shared with local food banks and neighbors`,
         "Just now"
       );
@@ -1807,8 +1882,10 @@ function StatSummaryCard({ color, label, value, unit, delta, down = false }) {
   );
 }
 
-function RecipePage() {
-  const [tags, setTags] = useState([]);
+function RecipePage({ addPost }) {
+  console.log('RecipePage rendered, addPost:', !!addPost);
+  
+  const [tags, setTags] = useState(["chicken", "broccoli", "rice", "garlic", "olive oil"]);
   const [inputValue, setInputValue] = useState("");
   const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -2179,13 +2256,46 @@ function RecipePage() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Create a new community post
+        const newPost = {
+          id: Date.now(),
+          type: "wanting",
+          author: "You",
+          initials: "Y",
+          location: "Your location",
+          time: "Just now",
+          text: helpMessage,
+          items: [ingredientName],
+          images: ["🔍"],
+          qty: helpIngredient.quantity || "Any amount",
+          expiry: null,
+          likes: 0,
+          comments: [],
+          liked: false,
+          claimed: false,
+          commentsOpen: false,
+          commentDraft: "",
+        };
+        
+        console.log('Created new post:', newPost);
+        console.log('addPost function exists:', !!addPost);
+        
+        // Add post to community feed
+        if (addPost) {
+          addPost(newPost);
+          console.log('Post added to community feed');
+        } else {
+          console.error('addPost function is not available');
+        }
+        
         // Copy to clipboard and show success
         navigator.clipboard.writeText(helpMessage).then(() => {
-          alert('✅ Help request posted successfully! Message copied to clipboard.');
+          alert('✅ Help request posted to community feed! Message copied to clipboard.');
           setShowHelpModal(false);
         }).catch(err => {
           console.error('Failed to copy message:', err);
-          alert('✅ Help request posted successfully!\n\n' + helpMessage);
+          alert('✅ Help request posted to community feed!\n\n' + helpMessage);
           setShowHelpModal(false);
         });
       } else {
@@ -3366,20 +3476,17 @@ function RecipePage() {
   );
 }
 
-function SocialPage() {
+function SocialPage({ posts, setPosts }) {
+  console.log('SocialPage rendered with posts:', posts?.length, 'posts');
+  
   const [postType, setPostType] = useState("giving");
   const [feedFilter, setFeedFilter] = useState("all");
-  const [posts, setPosts] = useState(
-    SOCIAL_POSTS.map((post) => ({
-      ...post,
-      liked: false,
-      claimed: false,
-      commentsOpen: false,
-      commentDraft: "",
-    })),
-  );
+  const [filterOpen, setFilterOpen] = useState(false);
   const [compose, setCompose] = useState({ text: "", items: "", qty: "", expiry: "" });
   const [toast, setToast] = useState("");
+  const [matches, setMatches] = useState(null);
+  const [matchLoading, setMatchLoading] = useState(false);
+  const [showMatches, setShowMatches] = useState(false);
 
   useEffect(() => {
     if (!toast) {
@@ -3388,6 +3495,19 @@ function SocialPage() {
     const timer = window.setTimeout(() => setToast(""), 2500);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!filterOpen) return undefined;
+    
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.soc-filter-dropdown')) {
+        setFilterOpen(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [filterOpen]);
 
   const visiblePosts = posts.filter((post) => {
     if (feedFilter === "all") return true;
@@ -3433,6 +3553,54 @@ function SocialPage() {
     setToast(postType === "giving" ? "Posted! Nearby neighbors can see it now." : "Request posted to the community board.");
   };
 
+  const findMatches = async () => {
+    setMatchLoading(true);
+    try {
+      // Transform frontend posts to backend format
+      const transformedPosts = posts.map(post => ({
+        _id: String(post.id),
+        user_id: post.author,
+        type: post.type === 'giving' ? 'offer' : 'request',
+        ingredients: post.items.map(item => ({
+          name: item.toLowerCase(),
+          normalized_name: item.toLowerCase(),
+          quantity: null,
+          unit: null
+        })),
+        location: {
+          lat: 0,
+          lng: 0,
+          description: post.location || 'Unknown'
+        },
+        original_text: post.text,
+        status: 'active',
+        created_at: new Date().toISOString()
+      }));
+
+      // Send posts to backend for matching
+      const response = await fetch('http://localhost:5000/api/match-ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ posts: transformedPosts })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setMatches(data);
+        setShowMatches(true);
+        setToast(`Found ${data.stats.total_matches} ingredient matches!`);
+      } else {
+        setToast('Failed to find matches. Try again.');
+      }
+    } catch (error) {
+      console.error('Error finding matches:', error);
+      setToast('Error connecting to matching service.');
+    } finally {
+      setMatchLoading(false);
+    }
+  };
+
   return (
     <>
       <nav className="soc-nav">
@@ -3460,27 +3628,6 @@ function SocialPage() {
               <div><strong>12</strong><span>Received</span></div>
               <div><strong>4.9</strong><span>Rating</span></div>
             </div>
-          </div>
-
-          <div className="soc-sidebar-section">
-            <div className="soc-sidebar-title">Browse</div>
-            {[
-              ["all", "All Posts", posts.length],
-              ["giving", "Giving Away", posts.filter((post) => post.type === "giving").length],
-              ["wanting", "Looking For", posts.filter((post) => post.type === "wanting").length],
-              ["nearby", "Nearby", posts.filter((post) => post.location.includes("0.")).length],
-              ["expiring", "Expiring", posts.filter((post) => post.expiry).length],
-            ].map(([key, label, count]) => (
-              <button
-                className={`soc-filter-btn ${feedFilter === key ? "active" : ""}`.trim()}
-                key={key}
-                onClick={() => setFeedFilter(key)}
-                type="button"
-              >
-                <span>{label}</span>
-                <span className="count">{count}</span>
-              </button>
-            ))}
           </div>
 
           <div className="soc-sidebar-section">
@@ -3555,23 +3702,54 @@ function SocialPage() {
             </div>
           </div>
 
-          <div className="soc-feed-filter-bar">
-            {[
-              ["all", "All"],
-              ["giving", "Giving"],
-              ["wanting", "Looking For"],
-              ["expiring", "Expiring"],
-              ["nearby", "Nearby"],
-            ].map(([key, label]) => (
-              <button
-                className={`soc-feed-filter ${feedFilter === key ? "active" : ""}`.trim()}
-                key={key}
-                onClick={() => setFeedFilter(key)}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
+          <div className="soc-filter-dropdown">
+            <button 
+              className="soc-filter-btn" 
+              onClick={() => setFilterOpen(!filterOpen)}
+              type="button"
+            >
+              <span>Filter: {feedFilter === "all" ? "All Posts" : feedFilter === "giving" ? "Giving" : feedFilter === "wanting" ? "Looking For" : feedFilter === "expiring" ? "Expiring Soon" : "Nearby"}</span>
+              <span className="soc-filter-arrow">{filterOpen ? "▲" : "▼"}</span>
+            </button>
+            {filterOpen && (
+              <div className="soc-filter-menu">
+                <button 
+                  className={`soc-filter-option ${feedFilter === "all" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("all"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  All Posts
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "giving" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("giving"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Giving
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "wanting" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("wanting"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Looking For
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "expiring" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("expiring"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Expiring Soon
+                </button>
+                <button 
+                  className={`soc-filter-option ${feedFilter === "nearby" ? "active" : ""}`}
+                  onClick={() => { setFeedFilter("nearby"); setFilterOpen(false); }}
+                  type="button"
+                >
+                  Nearby
+                </button>
+              </div>
+            )}
           </div>
 
           {visiblePosts.map((post) => (
@@ -3698,18 +3876,6 @@ function SocialPage() {
 
         <aside className="soc-sidebar-right">
           <div className="soc-widget">
-            <div className="soc-widget-title">Live Activity</div>
-            {[
-              "Tom K. posted broccoli & kale available now",
-              "Amy C. is looking for eggs or dairy",
-              "Maria L. claimed a sourdough loaf from James",
-              "You gave away 4 lemons · 0 waste",
-            ].map((item) => (
-              <div className="soc-ticker-item" key={item}>{item}</div>
-            ))}
-          </div>
-
-          <div className="soc-widget">
             <div className="soc-widget-title">Community Impact</div>
             {[
               ["Items shared", "78%"],
@@ -3727,6 +3893,65 @@ function SocialPage() {
           </div>
 
           <div className="soc-widget">
+            <div className="soc-widget-title">🤖 AI Ingredient Matching</div>
+            <div style={{ padding: '12px 0' }}>
+              <button
+                className="soc-post-btn"
+                onClick={findMatches}
+                disabled={matchLoading}
+                type="button"
+                style={{ 
+                  width: '100%', 
+                  padding: '12px',
+                  fontSize: '14px',
+                  opacity: matchLoading ? 0.6 : 1,
+                  cursor: matchLoading ? 'wait' : 'pointer'
+                }}
+              >
+                {matchLoading ? '🔄 Finding Matches...' : '🔍 Find Ingredient Matches'}
+              </button>
+              
+              {matches && matches.stats && (
+                <div style={{ 
+                  marginTop: '12px', 
+                  padding: '12px', 
+                  background: '#f0f9f0', 
+                  borderRadius: '8px',
+                  fontSize: '13px'
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#2a5e2a' }}>
+                    Match Results
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div>✓ Requests: {matches.stats.total_requests}</div>
+                    <div>✓ Offers: {matches.stats.total_offers}</div>
+                    <div style={{ fontWeight: 'bold', color: '#3a6e3a' }}>
+                      🎯 Total Matches: {matches.stats.total_matches}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowMatches(!showMatches)}
+                    type="button"
+                    style={{
+                      marginTop: '10px',
+                      padding: '8px',
+                      width: '100%',
+                      background: '#3a6e3a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    {showMatches ? 'Hide Details' : 'View Details'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="soc-widget">
             <div className="soc-widget-title">Quick Links</div>
             <div className="soc-link-list">
               <a href="./dashboard.html">Dashboard</a>
@@ -3737,6 +3962,149 @@ function SocialPage() {
           </div>
         </aside>
       </div>
+
+      {showMatches && matches && matches.matches && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+          onClick={() => setShowMatches(false)}
+        >
+          <div 
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              maxWidth: '800px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              padding: '24px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px',
+              borderBottom: '2px solid #3a6e3a',
+              paddingBottom: '12px'
+            }}>
+              <h2 style={{ margin: 0, color: '#2a5e2a' }}>🤖 AI Ingredient Matches</h2>
+              <button
+                onClick={() => setShowMatches(false)}
+                type="button"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '20px', padding: '12px', background: '#f0f9f0', borderRadius: '8px' }}>
+              <strong>Summary:</strong> Found {matches.stats.total_matches} matches from {matches.stats.total_requests} requests and {matches.stats.total_offers} offers
+            </div>
+
+            {Object.entries(matches.matches).map(([requestId, matchList]) => {
+              if (!matchList || matchList.length === 0) return null;
+              
+              const firstMatch = matchList[0];
+              return (
+                <div 
+                  key={requestId}
+                  style={{
+                    marginBottom: '24px',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    background: '#fafafa'
+                  }}
+                >
+                  <div style={{ 
+                    marginBottom: '12px', 
+                    paddingBottom: '12px', 
+                    borderBottom: '1px solid #ddd'
+                  }}>
+                    <div style={{ fontWeight: 'bold', color: '#e85d3d', marginBottom: '4px' }}>
+                      🔍 Request from: {firstMatch.request.user_id}
+                    </div>
+                    <div style={{ color: '#666', fontSize: '14px' }}>
+                      Looking for: {firstMatch.request.ingredients}
+                    </div>
+                  </div>
+
+                  <div style={{ fontWeight: 'bold', marginBottom: '12px', color: '#2a5e2a' }}>
+                    Matches Found ({matchList.length}):
+                  </div>
+
+                  {matchList.map((match, idx) => (
+                    <div 
+                      key={idx}
+                      style={{
+                        background: 'white',
+                        padding: '12px',
+                        marginBottom: '12px',
+                        borderRadius: '6px',
+                        border: '1px solid #e0e0e0'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <div style={{ fontWeight: 'bold', color: '#3a6e3a' }}>
+                          👤 {match.offer.user_id}
+                        </div>
+                        <div style={{
+                          background: match.match_score >= 90 ? '#4caf50' : match.match_score >= 75 ? '#ff9800' : '#ffc107',
+                          color: 'white',
+                          padding: '4px 12px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          {match.match_score}% Match
+                        </div>
+                      </div>
+                      
+                      <div style={{ fontSize: '14px', color: '#666', marginBottom: '6px' }}>
+                        <strong>Offering:</strong> {match.offer.ingredients}
+                      </div>
+                      
+                      {match.offer.location && match.offer.location.description && (
+                        <div style={{ fontSize: '13px', color: '#888', marginBottom: '6px' }}>
+                          📍 {match.offer.location.description}
+                        </div>
+                      )}
+                      
+                      <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', padding: '8px', background: '#f9f9f9', borderRadius: '4px' }}>
+                        <strong>Matched Items:</strong> {match.matched_ingredients.join(', ')}
+                      </div>
+                      
+                      <div style={{ fontSize: '13px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>
+                        💡 {match.reason}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className={`soc-toast ${toast ? "show" : ""}`.trim()}>{toast}</div>
     </>
