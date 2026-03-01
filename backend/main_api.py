@@ -23,10 +23,14 @@ from dotenv import load_dotenv
 # Import our custom modules
 from cooking_assistant_fixed import CookingAssistant
 from realtime_object_detection import GeminiVisionDetector
+from community_help import community_help_bp, initialize_community_service
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
+
+# Register blueprints
+app.register_blueprint(community_help_bp, url_prefix='/api')
 
 # Load environment variables
 load_dotenv()
@@ -40,12 +44,13 @@ detection_thread = None
 
 # Initialize services
 def initialize_services():
-    """Initialize cooking assistant and vision detector"""
+    """Initialize cooking assistant, vision detector, and community help"""
     global cooking_assistant, vision_detector
     try:
         cooking_assistant = CookingAssistant()
         vision_detector = GeminiVisionDetector()
-        print("✅ Services initialized successfully!")
+        initialize_community_service()
+        print("✅ All services initialized successfully!")
         return True
     except Exception as e:
         print(f"❌ Error initializing services: {e}")
@@ -648,6 +653,11 @@ def print_endpoints():
     print("  POST /api/suggest-recipes        - Get recipe suggestions")
     print("  POST /api/get-recipe            - Get detailed recipe")
     print("  POST /api/cooking-chat          - General cooking assistance")
+    
+    print("\n🤝 COMMUNITY HELP:")
+    print("  POST /api/generate-help-message  - Generate AI help message")
+    print("  POST /api/post-help-message      - Post help request to community")
+    print("  GET /api/help-messages          - Get all help messages")
     
     print("\n🔗 COMBINED FEATURES:")
     print("  POST /api/analyze-and-suggest   - Analyze image + suggest recipes")
