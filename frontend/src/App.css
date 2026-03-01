@@ -40,3 +40,159 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Gemini Results Styles */
+.gemini-section {
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #2a5a3a;
+  font-size: 18px;
+}
+
+.refresh-btn {
+  background: #f0f9f0;
+  border: 1px solid #d4e6d4;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background: #e8f5e8;
+  border-color: #b8d4b8;
+}
+
+.gemini-result-card {
+  background: linear-gradient(135deg, #f8fdf8 0%, #f0f9f0 100%);
+  border: 1px solid #d4e6d4;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(42, 90, 58, 0.1);
+  transition: all 0.3s ease;
+}
+
+.gemini-result-card:hover {
+  box-shadow: 0 4px 12px rgba(42, 90, 58, 0.15);
+  transform: translateY(-1px);
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e8f0e8;
+  padding-bottom: 8px;
+}
+
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.result-title h4 {
+  margin: 0;
+  color: #2a5a3a;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.confidence-badge {
+  background: #34a853;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.timestamp {
+  color: #666;
+  font-size: 12px;
+}
+
+.result-details {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 6px 0;
+}
+
+.label {
+  font-weight: 600;
+  color: #2a5a3a;
+  font-size: 13px;
+}
+
+.value {
+  color: #444;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.value.quality {
+  font-weight: 500;
+  color: #34a853;
+}
+
+.value.safety.safe {
+  color: #34a853;
+}
+
+.value.safety.unsafe {
+  color: #ea4335;
+}
+
+.value.community.shareable {
+  color: #4285f4;
+}
+
+.value.community.not-shareable {
+  color: #fbbc04;
+}
+
+.demo-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e8f0e8;
+}
+
+.demo-section h4 {
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.test-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.test-btn:hover {
+  background: #0056b3;
+}
