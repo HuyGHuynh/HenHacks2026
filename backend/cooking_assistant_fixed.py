@@ -159,7 +159,7 @@ Focus on a practical home-kitchen version using the ingredients I have available
         try:
             # Use the latest Gemini Flash model
             response = self.client.models.generate_content(
-                model='gemini-flash-latest',  # Use latest available model
+                model='gemini-2.5-flash',  # Use latest available model
                 contents=prompt
             )
             return response.text

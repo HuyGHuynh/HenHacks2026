@@ -22,7 +22,7 @@ class CommunityHelpConfig:
     """Configuration for Community Help feature"""
     
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-    GEMINI_MODEL = 'gemini-flash-latest'  # Using the same model as cooking assistant
+    GEMINI_MODEL = 'gemini-2.5-flash'  # Using the same model as cooking assistant
     
     SYSTEM_PROMPT = """You are a friendly community cooking assistant.
 Your task is to generate short, warm, and polite help messages for a neighborhood food-sharing app.

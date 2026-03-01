@@ -113,7 +113,7 @@ class GeminiIngredientMatcher:
         
         # Configure Gemini using Client
         self.client = genai.Client(api_key=self.api_key)
-        self.model_name = 'gemini-flash-latest'
+        self.model_name = 'gemini-2.5-flash'
         print("✅ Gemini API initialized")
     
     def extract_ingredients_from_post(self, post: Dict) -> str:
