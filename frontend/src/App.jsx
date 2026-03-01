@@ -278,10 +278,10 @@ function App() {
   if (PAGE === "social") {
     return <SocialPage posts={posts} setPosts={setPosts} />;
   }
-  return <DetectionPage />;
+  return <DetectionPage addPost={addPost} setPosts={setPosts} />;
 }
 
-function DetectionPage() {
+function DetectionPage({ addPost, setPosts }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const scanTimeoutRef = useRef(null);
@@ -371,10 +371,43 @@ function DetectionPage() {
   // Handle community sharing
   const handleCommunityShare = (result, shared) => {
     if (shared) {
+      // Create a community post with the detection data
+      const newPost = {
+        id: Date.now(),
+        type: "giving",  // User is offering this item
+        author: "Sarah M.",
+        initials: "S",
+        location: "Your location",
+        time: "Just now",
+        text: `Sharing ${result.name} detected by AI camera. ${result.quality} quality, ${result.condition} condition.`,
+        items: [result.name],
+        images: ["🎥"],  // Camera emoji to indicate AI detection
+        qty: result.quantity || "See details",
+        expiry: null,
+        likes: 0,
+        comments: [],
+        liked: false,
+        claimed: false,
+        commentsOpen: false,
+        commentDraft: "",
+        // Add detection metadata for reference
+        detectionData: {
+          quality: result.quality,
+          quantity: result.quantity,
+          condition: result.condition,
+          safe: result.safe,
+          confidence: result.confidence,
+          timestamp: result.timestamp
+        }
+      };
+      
+      // Add the post to community feed
+      addPost(newPost);
+      
       addNotification(
         "",
         "notif-neighbor",
-        "Community sharing confirmed",
+        "Posted to Community",
         `"${result.name}" shared with local food banks and neighbors`,
         "Just now"
       );

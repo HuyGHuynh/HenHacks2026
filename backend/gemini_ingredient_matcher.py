@@ -259,13 +259,177 @@ Rules:
             print(f"❌ Error matching with Gemini: {e}")
             return []
     
+    def match_all_requests_with_offers_batch(
+        self,
+        request_posts: List[Dict],
+        offer_posts: List[Dict]
+    ) -> Dict[str, List[Dict]]:
+        """
+        Match all requests with all offers using SINGLE Gemini AI call (FASTEST)
+        
+        Args:
+            request_posts: All posts from users looking for ingredients
+            offer_posts: All posts from users offering ingredients
+        
+        Returns:
+            Dictionary mapping request_post_id -> list of matched offers
+        """
+        if not request_posts or not offer_posts:
+            return {req.get('_id'): [] for req in request_posts}
+        
+        print(f"\n🚀 Batch matching {len(request_posts)} requests with {len(offer_posts)} offers (single API call)...")
+        
+        # Build comprehensive prompt with all data
+        prompt = """You are an intelligent ingredient matching system. Analyze ALL requests and offers below.
+
+**REQUESTS (users looking for ingredients):**
+"""
+        
+        # Add all requests
+        request_map = {}  # Map index to request data
+        for idx, req in enumerate(request_posts, 1):
+            request_id = req.get('_id')
+            request_user = req.get('user_id', 'unknown')
+            request_ingredients = self.extract_ingredients_from_post(req)
+            request_map[idx] = {
+                'id': request_id,
+                'user_id': request_user,
+                'ingredients': request_ingredients,
+                'data': req
+            }
+            prompt += f"{idx}. User: {request_user}, Needs: {request_ingredients}\n"
+        
+        prompt += "\n**OFFERS (users giving ingredients):**\n"
+        
+        # Add all offers
+        offer_map = {}  # Map index to offer data
+        for idx, off in enumerate(offer_posts, 1):
+            offer_user = off.get('user_id', 'unknown')
+            offer_ingredients = self.extract_ingredients_from_post(off)
+            offer_location = off.get('location', {}).get('description', 'N/A')
+            offer_map[idx] = {
+                'user_id': offer_user,
+                'ingredients': offer_ingredients,
+                'location': off.get('location', {}),
+                'data': off
+            }
+            prompt += f"{idx}. User: {offer_user}, Has: {offer_ingredients}, Location: {offer_location}\n"
+        
+        prompt += """\n**Task:**
+Match requests with offers. Consider:
+1. Ingredient similarity (exact matches, substitutes)
+2. Don't match users with themselves
+3. Match score 60-100 (only include 60+)
+
+Return JSON in this EXACT format:
+{
+  "matches": [
+    {
+      "request_index": 1,
+      "offer_index": 2,
+      "match_score": 85,
+      "matched_ingredients": ["tomato", "onion"],
+      "reason": "Exact match for tomatoes and onions"
+    }
+  ]
+}
+
+Rules:
+- Only return valid JSON (no other text)
+- Only matches with score >= 60
+- Don't match same user to themselves
+- Be concise in reasons
+"""
+        
+        try:
+            # Single Gemini API call for everything
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
+            response_text = response.text.strip()
+            
+            # Extract JSON
+            if '```json' in response_text:
+                response_text = response_text.split('```json')[1].split('```')[0].strip()
+            elif '```' in response_text:
+                response_text = response_text.split('```')[1].split('```')[0].strip()
+            
+            # Parse response
+            result = json.loads(response_text)
+            matches_list = result.get('matches', [])
+            
+            print(f"✅ Batch matching complete: {len(matches_list)} matches found")
+            
+            # Organize by request_id
+            all_matches = {req.get('_id'): [] for req in request_posts}
+            
+            for match in matches_list:
+                req_idx = match.get('request_index')
+                off_idx = match.get('offer_index')
+                
+                if req_idx not in request_map or off_idx not in offer_map:
+                    continue
+                
+                req_info = request_map[req_idx]
+                off_info = offer_map[off_idx]
+                
+                # Don't match same user
+                if req_info['user_id'] == off_info['user_id']:
+                    continue
+                
+                # Build enriched match
+                enriched_match = {
+                    'request': {
+                        'user_id': req_info['user_id'],
+                        'ingredients': req_info['ingredients'],
+                        'post_id': req_info['id']
+                    },
+                    'offer': {
+                        'user_id': off_info['user_id'],
+                        'ingredients': off_info['ingredients'],
+                        'location': off_info['location'],
+                        'post_id': off_info['data'].get('_id')
+                    },
+                    'match_score': match.get('match_score', 0),
+                    'matched_ingredients': match.get('matched_ingredients', []),
+                    'reason': match.get('reason', ''),
+                    'matched_at': datetime.now().isoformat()
+                }
+                
+                all_matches[req_info['id']].append(enriched_match)
+            
+            # Sort matches by score
+            for request_id in all_matches:
+                all_matches[request_id].sort(key=lambda x: x['match_score'], reverse=True)
+            
+            # Print summary
+            for req_idx, req_info in request_map.items():
+                matches_count = len(all_matches[req_info['id']])
+                if matches_count > 0:
+                    print(f"  ✅ {req_info['user_id']}: {matches_count} matches")
+            
+            return all_matches
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ Error parsing batch response: {e}")
+            print(f"Response: {response_text[:300]}")
+            # Fallback to empty matches
+            return {req.get('_id'): [] for req in request_posts}
+        except Exception as e:
+            print(f"❌ Batch matching error: {e}")
+            import traceback
+            traceback.print_exc()
+            return {req.get('_id'): [] for req in request_posts}
+    
     def match_all_requests_with_offers(
         self,
         request_posts: List[Dict],
         offer_posts: List[Dict]
     ) -> Dict[str, List[Dict]]:
         """
-        Match all requests with all offers using Gemini AI
+        Match all requests with all offers using Gemini AI (sequential mode)
+        Note: Use match_all_requests_with_offers_batch for faster performance
         
         Args:
             request_posts: All posts from users looking for ingredients
