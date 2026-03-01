@@ -207,6 +207,12 @@ const SOCIAL_POSTS = [
   },
 ];
 
+// Global API URL function - accessible to all components
+const getApiUrl = () => {
+  // Always use current domain for API calls
+  return `${window.location.protocol}//${window.location.hostname}`;
+};
+
 const PAGE = (() => {
   if (window.location.pathname.endsWith("/login.html") || window.location.pathname === "/login.html") {
     return "login";
@@ -358,16 +364,6 @@ function DetectionPage({ addPost, setPosts }) {
     } catch (error) {
       setIsAutoPlaying(false);
     }
-  };
-
-  // Dynamic API URL detection for deployment
-  const getApiUrl = () => {
-    // If we're on DigitalOcean (bytemequickly.tech), use same domain
-    if (window.location.hostname === 'bytemequickly.tech') {
-      return `${window.location.protocol}//${window.location.hostname}`;
-    }
-    // For local development, use localhost:5000
-    return 'http://localhost:5000';
   };
 
   // Handle community sharing
