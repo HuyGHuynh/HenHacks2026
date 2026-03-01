@@ -261,9 +261,9 @@ function DetectionPage() {
   // Auto-TTS function for new results
   const autoSpeakResult = async (result) => {
     if (!autoTTSEnabled || isAutoPlaying) return;
-    
+
     setIsAutoPlaying(true);
-    
+
     // Construct the text to be spoken
     const textToSpeak = `New detection: ${result.name}. ` +
       `Quality: ${result.quality}. ` +
@@ -271,17 +271,17 @@ function DetectionPage() {
       `Condition: ${result.condition}. ` +
       `Safe to eat: ${result.safe || 'Unknown'}. ` +
       `Community ready: ${result.community || 'Not specified'}.`;
-    
+
     try {
       // Call ElevenLabs API through backend
       const response = await fetch('http://localhost:5000/api/text-to-speech', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json' 
+        headers: {
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ text: textToSpeak })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.audio_data) {
@@ -289,20 +289,20 @@ function DetectionPage() {
           const audioBlob = new Blob([
             Uint8Array.from(atob(data.audio_data), c => c.charCodeAt(0))
           ], { type: data.content_type });
-          
+
           const audioUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioUrl);
-          
+
           audio.onended = () => {
             setIsAutoPlaying(false);
             URL.revokeObjectURL(audioUrl);
           };
-          
+
           audio.onerror = () => {
             setIsAutoPlaying(false);
             URL.revokeObjectURL(audioUrl);
           };
-          
+
           await audio.play();
         } else {
           setIsAutoPlaying(false);
@@ -310,7 +310,7 @@ function DetectionPage() {
       } else {
         setIsAutoPlaying(false);
       }
-      
+
     } catch (error) {
       setIsAutoPlaying(false);
     }
@@ -352,7 +352,7 @@ function DetectionPage() {
     if (geminiResults.length > lastResultsCount && lastResultsCount > 0) {
       const newCount = geminiResults.length - lastResultsCount;
       const latestResult = geminiResults[geminiResults.length - 1];
-      
+
       addNotification(
         "",
         "notif-alert",
@@ -360,7 +360,7 @@ function DetectionPage() {
         `${newCount} new food item${newCount > 1 ? 's' : ''} detected`,
         "Just now"
       );
-      
+
       // Auto-TTS for the latest result if enabled
       if (autoTTSEnabled && latestResult) {
         setTimeout(() => autoSpeakResult(latestResult), 500); // Small delay after notification
@@ -376,7 +376,15 @@ function DetectionPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setGeminiResults(data.results);
+          // Only update state if data has actually changed
+          setGeminiResults(prevResults => {
+            const newResults = data.results;
+            // Compare arrays to prevent unnecessary re-renders
+            if (JSON.stringify(prevResults) !== JSON.stringify(newResults)) {
+              return newResults;
+            }
+            return prevResults; // Return same reference to prevent re-render
+          });
         } else {
           console.warn('API returned unsuccessful response:', data.error);
         }
@@ -416,8 +424,8 @@ function DetectionPage() {
   // Fetch results on component mount and set up polling
   useEffect(() => {
     fetchGeminiResults();
-    // Poll for new results every 4 seconds
-    const interval = setInterval(fetchGeminiResults, 4000);
+    // Poll for new results every 8 seconds (reduced from 4 seconds to minimize blinking)
+    const interval = setInterval(fetchGeminiResults, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -803,7 +811,7 @@ function DetectionPage() {
                   </div>
                 )}
               </div>
-              
+
               {/* Gemini Detection Results */}
               {geminiResults.length > 0 && (
                 <div className="gemini-section">
@@ -948,9 +956,9 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
   // Text-to-speech function with improved female voice fallback
   const speakResult = async () => {
     if (isPlaying) return;
-    
+
     setIsPlaying(true);
-    
+
     // Construct the text to be spoken
     const textToSpeak = `Detection result: ${result.name}. ` +
       `Quality: ${result.quality}. ` +
@@ -958,61 +966,61 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
       `Condition: ${result.condition}. ` +
       `Safe to eat: ${result.safe || 'Unknown'}. ` +
       `Community ready: ${result.community || 'Not specified'}.`;
-    
+
     // Function to use browser TTS with female voice
     const useBrowserTTS = () => {
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.rate = 0.9;
       utterance.pitch = 1.2;  // Higher pitch for more feminine sound
-      
+
       // Wait for voices to load if they haven't already
       const setVoiceAndSpeak = () => {
         const voices = speechSynthesis.getVoices();
         const femaleVoice = voices.find(voice => {
           const name = voice.name.toLowerCase();
-          return name.includes('female') || 
-                 name.includes('woman') ||
-                 name.includes('zira') ||
-                 name.includes('hazel') ||
-                 name.includes('susan') ||
-                 name.includes('cortana') ||
-                 name.includes('siri') ||
-                 (voice.lang.includes('en') && name.includes('2')); // Often female voices are numbered #2
+          return name.includes('female') ||
+            name.includes('woman') ||
+            name.includes('zira') ||
+            name.includes('hazel') ||
+            name.includes('susan') ||
+            name.includes('cortana') ||
+            name.includes('siri') ||
+            (voice.lang.includes('en') && name.includes('2')); // Often female voices are numbered #2
         });
-        
+
         if (femaleVoice) {
           utterance.voice = femaleVoice;
           console.log('Using female voice:', femaleVoice.name);
         } else {
           console.log('No female voice found, using default with higher pitch');
         }
-        
+
         utterance.onend = () => setIsPlaying(false);
         utterance.onerror = () => {
           console.error('Speech synthesis error');
           setIsPlaying(false);
         };
-        
+
         speechSynthesis.speak(utterance);
       };
-      
+
       if (speechSynthesis.getVoices().length === 0) {
         speechSynthesis.addEventListener('voiceschanged', setVoiceAndSpeak, { once: true });
       } else {
         setVoiceAndSpeak();
       }
     };
-    
+
     try {
       // Try ElevenLabs API first
       const response = await fetch('http://localhost:5000/api/text-to-speech', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json' 
+        headers: {
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ text: textToSpeak })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.audio_data) {
@@ -1020,15 +1028,15 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
           const audioBlob = new Blob([
             Uint8Array.from(atob(data.audio_data), c => c.charCodeAt(0))
           ], { type: data.content_type });
-          
+
           const audioUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioUrl);
-          
+
           audio.onended = () => {
             setIsPlaying(false);
             URL.revokeObjectURL(audioUrl);
           };
-          
+
           audio.onerror = () => {
             setIsPlaying(false);
             URL.revokeObjectURL(audioUrl);
@@ -1036,7 +1044,7 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
             // Fallback to browser TTS if audio playback fails
             useBrowserTTS();
           };
-          
+
           await audio.play();
         } else {
           throw new Error(data.error || 'Failed to generate audio');
@@ -1045,7 +1053,7 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
         // Fallback to browser TTS if ElevenLabs fails
         useBrowserTTS();
       }
-      
+
     } catch (error) {
       // Always use browser TTS as fallback  
       useBrowserTTS();
@@ -1102,7 +1110,7 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
           >
             {isAutoPlaying ? '🔊' : isPlaying ? '🔊' : autoTTSEnabled ? '🔈✨' : '🔈'}
             {autoTTSEnabled && (
-              <span 
+              <span
                 style={{
                   position: 'absolute',
                   top: '-2px',
@@ -1815,7 +1823,7 @@ function RecipePage() {
       return;
     }
     setLoading(true);
-    
+
     try {
       // Call Gemini-powered recipe suggestion API
       console.log('Calling AI recipe API with ingredients:', tags);
@@ -1834,21 +1842,21 @@ function RecipePage() {
       if (response.ok) {
         const data = await response.json();
         console.log('API Response data:', data);
-        
+
         if (data.success && data.suggested_dishes) {
           console.log('Using AI-generated recipes:', data.suggested_dishes.length, 'recipes');
-          
+
           // Parse the raw response to extract details for each dish
           const rawLines = data.raw_response.split('\n').filter(line => line.trim());
-          
+
           // Transform API response to match our UI structure
           const apiRecipes = data.suggested_dishes.map((dishName, index) => {
             // Try to find the corresponding description in raw_response
             const dishLine = rawLines.find(line => line.includes(dishName));
-            const description = dishLine ? 
-              dishLine.split(':').slice(1).join(':').trim() : 
+            const description = dishLine ?
+              dishLine.split(':').slice(1).join(':').trim() :
               'AI-generated recipe suggestion based on your ingredients';
-            
+
             return {
               id: `api-${index}`,
               emoji: "",
@@ -1875,7 +1883,7 @@ function RecipePage() {
               if (filter === "Quick") {
                 return parseInt(recipe.time, 10) < 30;
               }
-              return recipe.badges.some((badge) => 
+              return recipe.badges.some((badge) =>
                 badge.toLowerCase().includes(filter.toLowerCase())
               );
             });
@@ -1901,7 +1909,7 @@ function RecipePage() {
       console.warn('Falling back to local recipes due to network error');
       generateLocalRecipes();
     }
-    
+
     setLoading(false);
   };
 
@@ -1947,7 +1955,7 @@ function RecipePage() {
   // Text-to-Speech using ElevenLabs API
   const speakText = async (text) => {
     if (!text || isReading) return;
-    
+
     setIsReading(true);
     try {
       const response = await fetch('http://localhost:5000/api/text-to-speech', {
@@ -1961,7 +1969,7 @@ function RecipePage() {
       if (response.ok) {
         // Parse the JSON response which contains base64-encoded audio
         const data = await response.json();
-        
+
         if (data.success && data.audio_data) {
           // Decode base64 audio data to binary
           const binaryString = atob(data.audio_data);
@@ -1969,24 +1977,24 @@ function RecipePage() {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
           }
-          
+
           // Create blob with explicit MIME type for MP3
           const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
           const audioUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioUrl);
-          
+
           audio.onended = () => {
             URL.revokeObjectURL(audioUrl);
             setIsReading(false);
           };
-          
+
           audio.onerror = (e) => {
             console.error('Audio playback error:', e);
             console.error('Audio source:', audioUrl);
             URL.revokeObjectURL(audioUrl);
             setIsReading(false);
           };
-          
+
           // Play with error handling
           try {
             await audio.play();
@@ -2024,7 +2032,7 @@ function RecipePage() {
       onMouseLeave: (e) => {
         e.currentTarget.style.backgroundColor = '';
       },
-      style: { 
+      style: {
         cursor: 'pointer',
         position: 'relative'
       },
@@ -2036,10 +2044,10 @@ function RecipePage() {
   useEffect(() => {
     if (autoReadEnabled && results.length > 0) {
       // Just read the recipe names when results are generated
-      const recipeNames = results.map((recipe, index) => 
+      const recipeNames = results.map((recipe, index) =>
         `Recipe ${index + 1}: ${recipe.title.replace(/\*\*/g, '')}`
       ).join('. ');
-      
+
       speakText(`I found ${results.length} recipe${results.length > 1 ? 's' : ''} for you. ${recipeNames}. Click on any recipe to hear more details.`);
     }
   }, [results, autoReadEnabled]);
@@ -2047,24 +2055,24 @@ function RecipePage() {
   // Function to read all recipe names
   const readAllRecipeNames = () => {
     if (results.length === 0) return;
-    
+
     const recipeNames = results.map((recipe, index) => {
       const cleanTitle = recipe.title.replace(/\*\*/g, '');
       return `Recipe ${index + 1}: ${cleanTitle}. Cook time: ${recipe.time}. Difficulty: ${recipe.difficulty}.`;
     }).join(' ');
-    
+
     speakText(`Here are your ${results.length} recipe options. ${recipeNames}`);
   };
 
   // Function to read cooking instructions only
   const readCookingInstructions = (recipe) => {
     if (!recipe || !recipe.steps) return;
-    
+
     const instructions = recipe.steps.map((step, idx) => {
       const cleanStep = step.replace(/<[^>]*>/g, '').replace(/\*\*/g, '');
       return `Step ${idx + 1}: ${cleanStep}`;
     }).join('. ');
-    
+
     speakText(`Cooking instructions for ${recipe.title.replace(/\*\*/g, '')}. ${instructions}`);
   };
 
@@ -2078,11 +2086,11 @@ function RecipePage() {
   // Generate AI help message
   const generateHelpMessage = async () => {
     if (!helpIngredient) return;
-    
+
     setIsGeneratingMessage(true);
     try {
       const ingredientName = `${helpIngredient.quantity} ${helpIngredient.unit} ${helpIngredient.name}`.trim();
-      
+
       // Call Gemini-powered community help API
       const response = await fetch('http://localhost:5000/api/generate-help-message', {
         method: 'POST',
@@ -2122,10 +2130,10 @@ function RecipePage() {
   // Send help request (placeholder - could integrate with messaging/social features)
   const sendHelpRequest = async () => {
     if (!helpMessage.trim()) return;
-    
+
     try {
       const ingredientName = `${helpIngredient.quantity} ${helpIngredient.unit} ${helpIngredient.name}`.trim();
-      
+
       // Post to community help API
       const response = await fetch('http://localhost:5000/api/post-help-message', {
         method: 'POST',
@@ -2180,9 +2188,9 @@ function RecipePage() {
       const ingredientsList = getFormattedIngredients(selectedRecipe)
         .map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`)
         .join(', ');
-      
+
       const recipeDetails = `${selectedRecipe.title}. Cook time: ${selectedRecipe.time}. Servings: ${selectedRecipe.servings}. Ingredients: ${ingredientsList}. Now reading cooking steps.`;
-      
+
       speakText(recipeDetails);
     }
   }, [selectedRecipe, autoReadEnabled]);
@@ -2209,7 +2217,7 @@ function RecipePage() {
     const normalizedIngredients = detectedIngredients
       .map(name => normalizeTag(name))
       .filter(name => name && !tags.includes(name));
-    
+
     if (normalizedIngredients.length > 0) {
       setTags(prev => [...prev, ...normalizedIngredients]);
     }
@@ -2218,7 +2226,7 @@ function RecipePage() {
   // Format recipe instructions with better highlighting
   const formatRecipeStep = (step) => {
     if (!step) return '';
-    
+
     // Important cooking action words to highlight
     const actionWords = [
       'Season', 'Sear', 'Cook', 'Add', 'Heat', 'Sauté', 'Simmer', 'Boil', 'Fry', 'Bake', 'Roast', 'Grill',
@@ -2226,63 +2234,63 @@ function RecipePage() {
       'Pour', 'Drain', 'Remove', 'Set aside', 'Serve', 'Garnish', 'Rest', 'Cool', 'Chill', 'Freeze',
       'Preheat', 'Reduce', 'Increase', 'Lower', 'Raise', 'Cover', 'Uncover', 'Scrape'
     ];
-    
+
     // Convert markdown bold (**text**) to HTML
     let formatted = step.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
+
     // Make the first action word bold if it's at the beginning
     const firstWord = formatted.split(/[\s:]/)[0];
     if (actionWords.some(action => action.toLowerCase() === firstWord.toLowerCase())) {
       formatted = formatted.replace(firstWord, `<strong>${firstWord}</strong>`);
     }
-    
+
     // Highlight temperature and time references
     formatted = formatted.replace(/(\d+)°([CF])/g, '<span style="background: #fff3cd; padding: 1px 3px; border-radius: 3px; font-weight: bold;">$1°$2</span>');
     formatted = formatted.replace(/(\d+-?\d*)\s?(minutes?|mins?|hours?|hrs?)/gi, '<span style="background: #d4edda; padding: 1px 3px; border-radius: 3px; font-weight: bold;">$1 $2</span>');
-    
+
     // Highlight measurements
     formatted = formatted.replace(/(\d+\/?\d*)\s?(cups?|tbsp|tsp|tablespoons?|teaspoons?|oz|lbs?|pounds?)/gi, '<span style="background: #cce5ff; padding: 1px 3px; border-radius: 3px; font-weight: bold;">$1 $2</span>');
-    
+
     return formatted;
   };
 
   // Parse ingredient string into structured components
   const parseIngredient = (ingredientText, isAvailable = false) => {
     if (!ingredientText) return null;
-    
+
     // Remove markdown and clean up
     let cleaned = ingredientText.replace(/\*\*(.*?)\*\*/g, '$1').trim();
-    
+
     // Check if this ingredient matches user's tags
     const matchesUserTags = isIngredientInUserTags(cleaned, tags);
-    
+
     // Extract quantity pattern (numbers, fractions, ranges)
     const quantityMatch = cleaned.match(/^([\d\/.\-–]+(?:\s*to\s*[\d\/.\-–]+)?)(\s*)/);
     let quantity = '';
     let remainder = cleaned;
-    
+
     if (quantityMatch) {
       quantity = quantityMatch[1];
       remainder = cleaned.substring(quantityMatch[0].length);
     }
-    
+
     // Extract unit (cups, tbsp, lbs, etc.)
     const unitMatch = remainder.match(/^([a-zA-Z]+(?:\s+[a-zA-Z]+)?)(\s*)/);
     let unit = '';
-    
+
     if (unitMatch) {
       unit = unitMatch[1];
       remainder = remainder.substring(unitMatch[0].length);
     }
-    
+
     // Extract ingredient name (everything before parentheses or preparation notes)
     const nameMatch = remainder.match(/^([^(,]+)/);
     let name = nameMatch ? nameMatch[1].trim() : remainder;
-    
+
     // Extract preparation notes (in parentheses or after commas)
     const prepMatch = remainder.match(/\(([^)]+)\)|,\s*(.+)$/);
     let preparation = prepMatch ? (prepMatch[1] || prepMatch[2]) : '';
-    
+
     return {
       quantity: quantity.trim(),
       unit: unit.trim(),
@@ -2304,16 +2312,16 @@ function RecipePage() {
   // Get all ingredients with better parsing
   const getFormattedIngredients = (recipe) => {
     if (!recipe) return [];
-    
+
     const allIngredients = [...(recipe.usedIngredients || []), ...(recipe.extraIngredients || [])];
     const uniqueIngredients = [...new Set(allIngredients)];
-    
+
     return uniqueIngredients.map((ingredient, index) => {
       const parsed = parseIngredient(ingredient);
-      
+
       // Check if ingredient is in user's input tags
       const isFromUserInput = isIngredientInUserTags(ingredient, tags);
-      
+
       return {
         ...parsed,
         isFromUserInput: isFromUserInput,
@@ -2329,7 +2337,7 @@ function RecipePage() {
       .replace(/\*\*/g, '')
       .replace(/[^a-z0-9\s]/g, '')
       .trim();
-    
+
     return userTags.some(tag => {
       const cleanTag = tag.toLowerCase().trim();
       // Check if tag is contained in ingredient or vice versa
@@ -2339,17 +2347,17 @@ function RecipePage() {
 
   const fetchRecipeDetails = async (recipe) => {
     console.log('fetchRecipeDetails called with recipe:', recipe);
-    
+
     // Check if we need to fetch detailed recipe
     const needsDetails = recipe.isAIGenerated && (
-      !recipe.hasDetailedRecipe || 
-      !recipe.detailedSteps || 
+      !recipe.hasDetailedRecipe ||
+      !recipe.detailedSteps ||
       recipe.detailedSteps.length === 0 ||
       recipe.steps.length === 1 // Only has placeholder text
     );
-    
+
     console.log('Needs details fetch:', needsDetails);
-    
+
     if (needsDetails) {
       try {
         console.log('Fetching detailed recipe for:', recipe.title);
@@ -2367,17 +2375,17 @@ function RecipePage() {
         if (response.ok) {
           const data = await response.json();
           console.log('Detailed recipe response:', data);
-          
+
           if (data.success && data.recipe) {
             // Parse the markdown-formatted recipe
             const recipeText = data.recipe;
-            
+
             // Extract ingredients section with better parsing
             const ingredientsMatch = recipeText.match(/### INGREDIENTS NEEDED:(.*?)(?=###|---|\n\n[A-Z])/s);
             let ingredients = [];
             let availableIngredients = [];
             let additionalIngredients = [];
-            
+
             if (ingredientsMatch) {
               const parsedIngredients = ingredientsMatch[1]
                 .split('\n')
@@ -2390,7 +2398,7 @@ function RecipePage() {
                   return cleaned;
                 })
                 .filter(ing => ing && ing.length > 0);
-              
+
               // Categorize ingredients based on user's input tags
               parsedIngredients.forEach(ingredient => {
                 if (isIngredientInUserTags(ingredient, tags)) {
@@ -2399,7 +2407,7 @@ function RecipePage() {
                   additionalIngredients.push(ingredient);
                 }
               });
-              
+
               ingredients = parsedIngredients;
               console.log('Ingredient validation:', {
                 total: ingredients.length,
@@ -2407,7 +2415,7 @@ function RecipePage() {
                 additional: additionalIngredients.length
               });
             }
-            
+
             // Extract cooking steps
             const stepsMatch = recipeText.match(/### COOKING STEPS:(.*?)(?=###|\n\n[A-Z]|$)/s);
             let steps = [];
@@ -2418,7 +2426,7 @@ function RecipePage() {
                 .map(step => step.replace(/^\*\*(.*?)\*\*:/, '$1:').trim())
                 .filter(step => step);
             }
-            
+
             // Update recipe with detailed information
             const updatedRecipe = {
               ...recipe,
@@ -2428,10 +2436,10 @@ function RecipePage() {
               availableIngredients: availableIngredients,
               additionalIngredients: additionalIngredients,
               hasDetailedRecipe: true,
-              ingredientMatchPercentage: ingredients.length > 0 ? 
+              ingredientMatchPercentage: ingredients.length > 0 ?
                 Math.round((availableIngredients.length / ingredients.length) * 100) : 100
             };
-            
+
             console.log('Updated recipe with details:', updatedRecipe);
             setSelectedRecipe(updatedRecipe);
             return;
@@ -2453,7 +2461,7 @@ function RecipePage() {
         <a className="logo" href="./dashboard.html">
           Fresh<em>Loop</em>
         </a>
-        
+
         {/* Reading Status Indicator */}
         {isReading && (
           <div style={{
@@ -2475,13 +2483,13 @@ function RecipePage() {
             <span style={{ fontWeight: 'bold' }}>Reading aloud...</span>
           </div>
         )}
-        
+
         <div className="rec-nav-right">
           <a className="rec-nav-link" href="./dashboard.html">Dashboard</a>
           <a className="rec-nav-link" href="./index.html">Detect</a>
           <a className="rec-nav-link active" href="./recipe.html">Recipes</a>
           <a className="rec-nav-link" href="./social.html">Community</a>
-          
+
           {/* Settings Gear Button */}
           <button
             className="rec-settings-btn"
@@ -2499,7 +2507,7 @@ function RecipePage() {
           >
             ⚙️
           </button>
-          
+
           {/* Settings Dropdown */}
           {showSettings && (
             <div
@@ -2519,7 +2527,7 @@ function RecipePage() {
               <div style={{ marginBottom: '12px', fontWeight: 'bold', fontSize: '14px' }}>
                 Voice Assistant Settings
               </div>
-              
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <label style={{
                   display: 'flex',
@@ -2537,7 +2545,7 @@ function RecipePage() {
                   Auto-read recipes aloud
                 </label>
               </div>
-              
+
               {isReading && (
                 <div style={{
                   marginTop: '12px',
@@ -2550,7 +2558,7 @@ function RecipePage() {
                   🔊 Currently reading...
                 </div>
               )}
-              
+
               <div style={{
                 marginTop: '12px',
                 fontSize: '11px',
@@ -2558,12 +2566,12 @@ function RecipePage() {
                 borderTop: '1px solid #eee',
                 paddingTop: '8px'
               }}>
-                <strong>Auto-read:</strong> Recipes will be read aloud automatically when generated or opened.<br/>
+                <strong>Auto-read:</strong> Recipes will be read aloud automatically when generated or opened.<br />
                 <strong>Click-to-read:</strong> Click on any recipe title, ingredient, or instruction to hear it read aloud.
               </div>
             </div>
           )}
-          
+
           <a className="btn-logout" href="./login.html">Logout</a>
           <div className="dash-nav-avatar">S</div>
         </div>
@@ -2778,12 +2786,12 @@ function RecipePage() {
                       <span style={{ color: '#6c757d' }}>•</span>
                       <span style={{ color: '#6c757d', fontSize: '11px' }}>View recipe for full list</span>
                     </div>
-                    <div 
-                      className="rec-card-title" 
+                    <div
+                      className="rec-card-title"
                       dangerouslySetInnerHTML={{ __html: formatDishTitle(recipe.title) }}
                       {...makeReadable(recipe.title.replace(/\*\*/g, ''), 'Recipe')}
                     />
-                    <div 
+                    <div
                       className="rec-card-desc"
                       {...makeReadable(recipe.description, 'Description')}
                     >
@@ -2839,8 +2847,8 @@ function RecipePage() {
               <div className="rec-modal-header">
                 <div>
                   <span className="rec-modal-emoji">{selectedRecipe.emoji}</span>
-                  <div 
-                    className="rec-modal-title" 
+                  <div
+                    className="rec-modal-title"
                     dangerouslySetInnerHTML={{ __html: formatDishTitle(selectedRecipe.title) }}
                     {...makeReadable(selectedRecipe.title.replace(/\*\*/g, ''), 'Recipe title')}
                   />
@@ -2870,7 +2878,7 @@ function RecipePage() {
                   >
                     🔊 Name
                   </button>
-                  
+
                   {/* Read Cooking Instructions Button */}
                   <button
                     onClick={() => readCookingInstructions(selectedRecipe)}
@@ -2892,7 +2900,7 @@ function RecipePage() {
                   >
                     🔊 Instructions
                   </button>
-                  
+
                   {/* Read Full Recipe Button */}
                   <button
                     onClick={() => {
@@ -2901,12 +2909,12 @@ function RecipePage() {
                         Cook time: ${selectedRecipe.time}. 
                         Servings: ${selectedRecipe.servings}. 
                         Difficulty: ${selectedRecipe.difficulty}.
-                        Ingredients needed: ${getFormattedIngredients(selectedRecipe).map(ing => 
-                          `${ing.quantity} ${ing.unit} ${ing.name}${ing.preparation ? ', ' + ing.preparation : ''}`
-                        ).join(', ')}.
-                        Cooking instructions: ${selectedRecipe.steps.map((step, idx) => 
-                          `Step ${idx + 1}: ${step.replace(/<[^>]*>/g, '').replace(/\*\*/g, '')}`
-                        ).join('. ')}.
+                        Ingredients needed: ${getFormattedIngredients(selectedRecipe).map(ing =>
+                        `${ing.quantity} ${ing.unit} ${ing.name}${ing.preparation ? ', ' + ing.preparation : ''}`
+                      ).join(', ')}.
+                        Cooking instructions: ${selectedRecipe.steps.map((step, idx) =>
+                        `Step ${idx + 1}: ${step.replace(/<[^>]*>/g, '').replace(/\*\*/g, '')}`
+                      ).join('. ')}.
                       `.replace(/\s+/g, ' ').trim();
                       speakText(fullRecipe);
                     }}
@@ -2948,11 +2956,11 @@ function RecipePage() {
                   extraIngredients: selectedRecipe.extraIngredients,
                   steps: selectedRecipe.steps?.length
                 });
-                
+
                 const userHas = ingredients.filter(ing => ing.isFromUserInput).length;
                 const total = ingredients.length;
                 const matchPercentage = total > 0 ? Math.round((userHas / total) * 100) : 0;
-                
+
                 return (
                   <div style={{
                     padding: '10px 15px',
@@ -2984,7 +2992,7 @@ function RecipePage() {
               })()}
               <div className="rec-modal-ingredients">
                 {getFormattedIngredients(selectedRecipe).map((ingredient) => (
-                  <div 
+                  <div
                     className={`rec-ingredient-item ${ingredient.isFromUserInput ? 'user-provided' : 'additional'}`}
                     key={ingredient.id}
                     {...makeReadable(`${ingredient.quantity} ${ingredient.unit} ${ingredient.name}${ingredient.preparation ? ', ' + ingredient.preparation : ''}`, 'Ingredient')}
@@ -3013,15 +3021,15 @@ function RecipePage() {
                         </div>
                       )}
                     </div>
-                    <div style={{ 
+                    <div style={{
                       flex: '0 0 auto',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px'
                     }}>
-                      <div style={{ 
-                        fontSize: '10px', 
-                        padding: '3px 8px', 
+                      <div style={{
+                        fontSize: '10px',
+                        padding: '3px 8px',
                         borderRadius: '12px',
                         backgroundColor: ingredient.isFromUserInput ? '#28a745' : '#ff9800',
                         color: 'white',
@@ -3077,8 +3085,8 @@ function RecipePage() {
                   return selectedRecipe.steps.map((step, index) => (
                     <div className="rec-step" key={`${selectedRecipe.title}-${index}`}>
                       <div className="rec-step-num">{index + 1}</div>
-                      <div 
-                        className="rec-step-text" 
+                      <div
+                        className="rec-step-text"
                         dangerouslySetInnerHTML={{ __html: formatRecipeStep(step) }}
                         {...makeReadable(step.replace(/<[^>]*>/g, '').replace(/\*\*/g, ''), `Step ${index + 1}`)}
                       />
@@ -3093,7 +3101,7 @@ function RecipePage() {
 
       {/* Help Request Modal */}
       {showHelpModal && helpIngredient && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -3109,7 +3117,7 @@ function RecipePage() {
           }}
           onClick={() => setShowHelpModal(false)}
         >
-          <div 
+          <div
             style={{
               background: 'white',
               borderRadius: '12px',
@@ -3229,8 +3237,8 @@ function RecipePage() {
                 style={{
                   flex: '1',
                   minWidth: '150px',
-                  background: isGeneratingMessage 
-                    ? '#6c757d' 
+                  background: isGeneratingMessage
+                    ? '#6c757d'
                     : 'linear-gradient(45deg, #6366f1, #8b5cf6)',
                   color: 'white',
                   border: 'none',
