@@ -75,8 +75,11 @@ class GeminiVisionDetector:
     def setup_mongodb(self):
         """Set up MongoDB connection."""
         try:
-            # MongoDB connection parameters
-            connection_string = "mongodb+srv://admindev:0S876GWT3f19j2Vh@db-mongodb-nyc3-54229-ae30f003.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-nyc3-54229"
+            # MongoDB connection parameters from environment
+            connection_string = os.getenv('MONGODB_URI')
+            if not connection_string:
+                print("Warning: MONGODB_URI not found in environment variables. Database disabled.")
+                return
             
             # Connect to MongoDB
             self.mongo_client = MongoClient(connection_string)
