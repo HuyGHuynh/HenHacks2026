@@ -21,6 +21,7 @@ export default defineConfig({
         login: fileURLToPath(new URL("./login.html", import.meta.url)),
         dashboard: fileURLToPath(new URL("./dashboard.html", import.meta.url)),
         recipe: fileURLToPath(new URL("./recipe.html", import.meta.url)),
+        social: fileURLToPath(new URL("./social.html", import.meta.url)),
       },
     },
   },
