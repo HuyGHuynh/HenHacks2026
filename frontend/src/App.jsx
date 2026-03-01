@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const FOOD_DATA = [
   { emoji: "🍎", name: "Apple", status: "fresh", freshness: 88, days: "~6 days", confidence: 97 },
@@ -166,6 +166,43 @@ function DetectionPage() {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState("results");
   const [alertState, setAlertState] = useState(null);
+  const [lastResultsCount, setLastResultsCount] = useState(0);
+
+  // Handle community sharing
+  const handleCommunityShare = (result, shared) => {
+    if (shared) {
+      addNotification(
+        "🤝",
+        "notif-neighbor",
+        "Community sharing confirmed",
+        `"${result.name}" shared with local food banks and neighbors`,
+        "Just now"
+      );
+    } else {
+      addNotification(
+        "💾",
+        "notif-alert",
+        "Item saved to database",
+        `"${result.name}" saved to your personal database`,
+        "Just now"
+      );
+    }
+  };
+
+  // Monitor for new results and show notifications
+  useEffect(() => {
+    if (geminiResults.length > lastResultsCount && lastResultsCount > 0) {
+      const newCount = geminiResults.length - lastResultsCount;
+      addNotification(
+        "📊",
+        "notif-alert",
+        "New detection results",
+        `${newCount} new food item${newCount > 1 ? 's' : ''} detected`,
+        "Just now"
+      );
+    }
+    setLastResultsCount(geminiResults.length);
+  }, [geminiResults.length, lastResultsCount]);
 
   // Fetch Gemini results from API
   const fetchGeminiResults = async () => {
@@ -175,10 +212,22 @@ function DetectionPage() {
         const data = await response.json();
         if (data.success) {
           setGeminiResults(data.results);
+        } else {
+          console.warn('API returned unsuccessful response:', data.error);
         }
+      } else {
+        console.error('Failed to fetch results:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching Gemini results:', error);
+      console.error('Network error fetching Gemini results:', error);
+      // Add user notification for network errors
+      addNotification(
+        "⚠️",
+        "notif-alert",
+        "Connection Error",
+        "Failed to fetch latest results. Check connection.",
+        "Just now"
+      );
     }
   };
 
@@ -202,8 +251,8 @@ function DetectionPage() {
   // Fetch results on component mount and set up polling
   useEffect(() => {
     fetchGeminiResults();
-    // Poll for new results every 30 seconds
-    const interval = setInterval(fetchGeminiResults, 30000);
+    // Poll for new results every 4 seconds
+    const interval = setInterval(fetchGeminiResults, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -257,8 +306,14 @@ function DetectionPage() {
   };
 
   const handleStartScan = () => {
-    const randomFood = FOOD_DATA[Math.floor(Math.random() * FOOD_DATA.length)];
-    startScan(randomFood, 2800);
+    // If camera is live, use real image analysis
+    if (cameraLive) {
+      captureSnapshot();
+    } else {
+      // Fall back to demo data if no camera
+      const randomFood = FOOD_DATA[Math.floor(Math.random() * FOOD_DATA.length)];
+      startScan(randomFood, 2800);
+    }
   };
 
   const handleDemoScan = () => {
@@ -286,6 +341,98 @@ function DetectionPage() {
     }
   };
 
+  const captureSnapshot = async () => {
+    if (!videoRef.current || !cameraLive) {
+      window.alert("Please start the camera first!");
+      return;
+    }
+
+    try {
+      setScanning(true);  // Set scanning state
+      setStatusLabel("Analyzing image...");
+
+      // Create canvas to capture video frame
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+
+      // Draw current video frame to canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setStatusLabel("Failed to capture image");
+          setScanning(false);
+          return;
+        }
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('image', blob, 'snapshot.jpg');
+
+        try {
+          // Send to backend API
+          const response = await fetch('http://localhost:5000/api/analyze-image', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              // Update the gemini results with new detections
+              setGeminiResults(prev => [...prev, ...data.results]);
+              setStatusLabel(`Found ${data.count} food items!`);
+
+              // Add success notification
+              addNotification(
+                "📸",
+                "notif-alert",
+                "Food analyzed!",
+                `Detected ${data.count} food items`,
+                "Just now"
+              );
+
+              // If we found items, simulate the detection result for UI
+              if (data.results.length > 0) {
+                const firstResult = data.results[0];
+                const mockFood = {
+                  emoji: "🥬", // Default emoji
+                  name: firstResult.name,
+                  status: firstResult.quality.toLowerCase().includes('fresh') ? 'fresh' :
+                    firstResult.quality.toLowerCase().includes('poor') ? 'spoiled' : 'warning',
+                  freshness: 85,
+                  days: firstResult.condition,
+                  confidence: Math.round(firstResult.confidence * 100)
+                };
+                setLastResult(mockFood);
+              }
+            } else {
+              setStatusLabel(`Analysis failed: ${data.error}`);
+            }
+          } else {
+            setStatusLabel("Failed to analyze image");
+          }
+        } catch (error) {
+          console.error('Error analyzing snapshot:', error);
+          setStatusLabel("Network error during analysis");
+        } finally {
+          setScanning(false);  // Always reset scanning state
+        }
+      }, 'image/jpeg', 0.8);
+
+    } catch (error) {
+      console.error('Error capturing snapshot:', error);
+      setStatusLabel("Failed to capture snapshot");
+      setScanning(false);
+    }
+  };
+
   const handleLogout = () => {
     window.location.href = "./login.html";
   };
@@ -295,12 +442,12 @@ function DetectionPage() {
       current.map((item) =>
         item.id === id
           ? {
-              ...item,
-              actions: {
-                ...item.actions,
-                [action]: value,
-              },
-            }
+            ...item,
+            actions: {
+              ...item.actions,
+              [action]: value,
+            },
+          }
           : item,
       ),
     );
@@ -421,7 +568,7 @@ function DetectionPage() {
 
           <div className="camera-controls">
             <button className={`btn-primary ${scanning ? "scanning" : ""}`.trim()} onClick={handleStartScan} type="button">
-              {scanning ? "⟳ Scanning..." : results.length ? "▶ Scan Again" : "▶ Start Scan"}
+              {scanning ? "⟳ Analyzing..." : cameraLive ? "📸 Analyze Food" : results.length ? "▶ Scan Again" : "▶ Start Scan"}
             </button>
             <button className="btn-secondary" onClick={handleDemoScan} type="button">
               Demo
@@ -451,17 +598,22 @@ function DetectionPage() {
               {geminiResults.length > 0 && (
                 <div className="gemini-section">
                   <div className="section-header">
-                    <h3>🔬 Gemini Vision Analysis</h3>
-                    <button 
-                      className="refresh-btn" 
+                    <h3>🔬 AI Detection Results ({geminiResults.length})</h3>
+                    <button
+                      className="refresh-btn"
                       onClick={fetchGeminiResults}
                       title="Refresh results"
+                      style={{ fontSize: '16px', background: 'none', border: 'none', cursor: 'pointer' }}
                     >
                       🔄
                     </button>
                   </div>
                   {geminiResults.slice().reverse().map((result, index) => (
-                    <GeminiResultCard key={result.id} result={result} />
+                    <GeminiResultCard
+                      key={result.id}
+                      result={result}
+                      onCommunityShare={handleCommunityShare}
+                    />
                   ))}
                 </div>
               )}
@@ -486,8 +638,12 @@ function DetectionPage() {
               {!results.length && !geminiResults.length && (
                 <div className="empty-state">
                   <span className="big">🌿</span>
-                  <span>Scan food to see results here</span>
-                  <button 
+                  <span>AI detection results will appear here</span>
+                  <p style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
+                    Use the camera or upload images to analyze food items.
+                    Results refresh automatically every 4 seconds.
+                  </p>
+                  <button
                     className="test-btn"
                     onClick={addTestDetection}
                     style={{
@@ -561,9 +717,30 @@ function DetectionPage() {
   );
 }
 
-function GeminiResultCard({ result }) {
-  const safeToEat = result.safe_to_eat?.toLowerCase().includes('yes');
-  const communityShare = result.community_share?.toLowerCase().includes('yes');
+function GeminiResultCard({ result, onCommunityShare }) {
+  const safeToEat = result.safe?.toLowerCase().includes('yes');
+  const communityShare = result.community?.toLowerCase().includes('yes');
+  const [isShared, setIsShared] = React.useState(false);
+
+  const handleCommunityShareClick = () => {
+    if (isShared) return;
+
+    if (communityShare) {
+      // Show confirmation dialog for community sharing
+      const confirmed = window.confirm(
+        `Share "${result.name}" with the community hub?\n\n` +
+        `This will make it available to local food banks and neighbors. ` +
+        `The item will still be saved to your database regardless of your choice.`
+      );
+
+      if (confirmed) {
+        setIsShared(true);
+        onCommunityShare && onCommunityShare(result, true);
+      } else {
+        onCommunityShare && onCommunityShare(result, false);
+      }
+    }
+  };
 
   return (
     <div className="gemini-result-card">
@@ -571,44 +748,71 @@ function GeminiResultCard({ result }) {
         <div className="result-title">
           <h4>🍎 {result.name}</h4>
           <div className="confidence-badge">
-            {(result.confidence * 100).toFixed(0)}% confidence
+            {Math.round((result.confidence || 0) * 100)}% confidence
           </div>
         </div>
         <div className="timestamp">
           {new Date(result.timestamp).toLocaleTimeString()}
         </div>
       </div>
-      
+
       <div className="result-details">
         <div className="detail-row">
           <span className="label">Quality:</span>
           <span className="value quality">{result.quality}</span>
         </div>
-        
+
         <div className="detail-row">
           <span className="label">Quantity:</span>
           <span className="value">{result.quantity}</span>
         </div>
-        
+
         <div className="detail-row">
           <span className="label">Condition:</span>
           <span className="value">{result.condition}</span>
         </div>
-        
+
         <div className="detail-row">
           <span className="label">Safe to Eat:</span>
           <span className={`value safety ${safeToEat ? 'safe' : 'unsafe'}`}>
-            {safeToEat ? '✅' : '⚠️'} {result.safe_to_eat}
+            {safeToEat ? '✅' : '⚠️'} {result.safe || 'Unknown'}
           </span>
         </div>
-        
+
         <div className="detail-row">
-          <span className="label">Community Share:</span>
+          <span className="label">Community Ready:</span>
           <span className={`value community ${communityShare ? 'shareable' : 'not-shareable'}`}>
-            {communityShare ? '🤝' : '❌'} {result.community_share}
+            {communityShare ? '🤝' : '❌'} {result.community || 'Not specified'}
           </span>
         </div>
       </div>
+
+      {communityShare && !isShared && (
+        <div className="community-actions">
+          <button
+            className="community-share-btn"
+            onClick={handleCommunityShareClick}
+            style={{
+              marginTop: '12px',
+              padding: '8px 16px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            🤝 Share with Community
+          </button>
+        </div>
+      )}
+
+      {isShared && (
+        <div className="community-shared" style={{ marginTop: '12px', color: '#28a745', fontSize: '14px' }}>
+          ✅ Shared with community hub!
+        </div>
+      )}
     </div>
   );
 }
