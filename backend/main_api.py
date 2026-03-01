@@ -162,7 +162,7 @@ def text_to_speech():
         
         data = {
             "text": text,
-            "model_id": "eleven_multilingual_v2",  # Better quality model
+            "model_id": "eleven_turbo_v2_5",  # Better quality model
             "voice_settings": {
                 "stability": 0.75,  # Higher stability for more natural speech
                 "similarity_boost": 0.75,  # Higher similarity for more human-like quality
