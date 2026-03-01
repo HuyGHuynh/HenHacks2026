@@ -162,13 +162,14 @@ def text_to_speech():
         
         data = {
             "text": text,
-            "model_id": "eleven_multilingual_v2",  # Better quality model
+            "model_id": "eleven_turbo_v2_5",  # 🚀 Fastest model for quick response
             "voice_settings": {
-                "stability": 0.75,  # Higher stability for more natural speech
-                "similarity_boost": 0.75,  # Higher similarity for more human-like quality
+                "stability": 0.5,  # Reduced for faster generation
+                "similarity_boost": 0.75,  # Maintain voice quality
                 "style": 0.0,  # Neutral style
-                "use_speaker_boost": True  # Enhanced speaker clarity
-            }
+                "use_speaker_boost": False  # Disabled for speed optimization
+            },
+            "optimize_streaming_latency": 4  # Maximum streaming optimization (0-4)
         }
         
         response = requests.post(url, json=data, headers=headers)
