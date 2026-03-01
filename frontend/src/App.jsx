@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 
 const FOOD_DATA = [
-  { emoji: "🍎", name: "Apple", status: "fresh", freshness: 88, days: "~6 days", confidence: 97 },
-  { emoji: "🍞", name: "Bread Loaf", status: "warning", freshness: 38, days: "Today", confidence: 91 },
-  { emoji: "🍓", name: "Strawberries", status: "spoiled", freshness: 5, days: "Expired", confidence: 95 },
-  { emoji: "🥕", name: "Carrots", status: "fresh", freshness: 72, days: "~4 days", confidence: 89 },
-  { emoji: "🥛", name: "Milk", status: "warning", freshness: 42, days: "Tomorrow", confidence: 93 },
-  { emoji: "🥑", name: "Avocado", status: "fresh", freshness: 90, days: "~3 days", confidence: 96 },
-  { emoji: "🍋", name: "Lemons", status: "fresh", freshness: 95, days: "~10 days", confidence: 98 },
+  { name: "Apple", status: "fresh", freshness: 88, days: "~6 days", confidence: 97 },
+  { name: "Bread Loaf", status: "warning", freshness: 38, days: "Today", confidence: 91 },
+  { name: "Strawberries", status: "spoiled", freshness: 5, days: "Expired", confidence: 95 },
+  { name: "Carrots", status: "fresh", freshness: 72, days: "~4 days", confidence: 89 },
+  { name: "Milk", status: "warning", freshness: 42, days: "Tomorrow", confidence: 93 },
+  { name: "Avocado", status: "fresh", freshness: 90, days: "~3 days", confidence: 96 },
+  { name: "Lemons", status: "fresh", freshness: 95, days: "~10 days", confidence: 98 },
 ];
 
 const INITIAL_NOTIFICATIONS = [
@@ -167,6 +167,66 @@ function DetectionPage() {
   const [activeTab, setActiveTab] = useState("results");
   const [alertState, setAlertState] = useState(null);
   const [lastResultsCount, setLastResultsCount] = useState(0);
+  const [autoTTSEnabled, setAutoTTSEnabled] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+
+  // Auto-TTS function for new results
+  const autoSpeakResult = async (result) => {
+    if (!autoTTSEnabled || isAutoPlaying) return;
+    
+    setIsAutoPlaying(true);
+    
+    // Construct the text to be spoken
+    const textToSpeak = `New detection: ${result.name}. ` +
+      `Quality: ${result.quality}. ` +
+      `Quantity: ${result.quantity}. ` +
+      `Condition: ${result.condition}. ` +
+      `Safe to eat: ${result.safe || 'Unknown'}. ` +
+      `Community ready: ${result.community || 'Not specified'}.`;
+    
+    try {
+      // Call ElevenLabs API through backend
+      const response = await fetch('http://localhost:5000/api/text-to-speech', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ text: textToSpeak })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.audio_data) {
+          // Convert base64 audio data to blob and play
+          const audioBlob = new Blob([
+            Uint8Array.from(atob(data.audio_data), c => c.charCodeAt(0))
+          ], { type: data.content_type });
+          
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          
+          audio.onended = () => {
+            setIsAutoPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+          };
+          
+          audio.onerror = () => {
+            setIsAutoPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+          };
+          
+          await audio.play();
+        } else {
+          setIsAutoPlaying(false);
+        }
+      } else {
+        setIsAutoPlaying(false);
+      }
+      
+    } catch (error) {
+      setIsAutoPlaying(false);
+    }
+  };
 
   // Handle community sharing
   const handleCommunityShare = (result, shared) => {
@@ -189,10 +249,12 @@ function DetectionPage() {
     }
   };
 
-  // Monitor for new results and show notifications
+  // Monitor for new results and show notifications + auto-TTS
   useEffect(() => {
     if (geminiResults.length > lastResultsCount && lastResultsCount > 0) {
       const newCount = geminiResults.length - lastResultsCount;
+      const latestResult = geminiResults[geminiResults.length - 1];
+      
       addNotification(
         "📊",
         "notif-alert",
@@ -200,9 +262,14 @@ function DetectionPage() {
         `${newCount} new food item${newCount > 1 ? 's' : ''} detected`,
         "Just now"
       );
+      
+      // Auto-TTS for the latest result if enabled
+      if (autoTTSEnabled && latestResult) {
+        setTimeout(() => autoSpeakResult(latestResult), 500); // Small delay after notification
+      }
     }
     setLastResultsCount(geminiResults.length);
-  }, [geminiResults.length, lastResultsCount]);
+  }, [geminiResults.length, lastResultsCount, autoTTSEnabled]);
 
   // Fetch Gemini results from API
   const fetchGeminiResults = async () => {
@@ -402,7 +469,6 @@ function DetectionPage() {
               if (data.results.length > 0) {
                 const firstResult = data.results[0];
                 const mockFood = {
-                  emoji: "🥬", // Default emoji
                   name: firstResult.name,
                   status: firstResult.quality.toLowerCase().includes('fresh') ? 'fresh' :
                     firstResult.quality.toLowerCase().includes('poor') ? 'spoiled' : 'warning',
@@ -548,7 +614,7 @@ function DetectionPage() {
               className={`detection-badge ${lastResult ? `show ${lastResult.status}` : ""}`.trim()}
               aria-hidden={!lastResult}
             >
-              <div className="badge-item">{lastResult ? `${lastResult.emoji} ${lastResult.name}` : "🍎 Apple"}</div>
+              <div className="badge-item">{lastResult ? lastResult.name : "Apple"}</div>
               <div className={`badge-status ${lastResult?.status || "fresh"}`}>
                 {lastResult
                   ? lastResult.status === "fresh"
@@ -594,25 +660,61 @@ function DetectionPage() {
 
           {activeTab === "results" && (
             <div className="panel-content">
+              {/* Auto-TTS Settings - Always visible at top */}
+              <div className="auto-tts-settings">
+                <div className="settings-header">
+                  <span className="settings-label">🗣️ Voice Assistant</span>
+                  <button
+                    className="auto-tts-btn"
+                    onClick={() => setAutoTTSEnabled(!autoTTSEnabled)}
+                    disabled={isAutoPlaying}
+                    title={isAutoPlaying ? "Auto-speech in progress..." : autoTTSEnabled ? "Disable automatic voice reading" : "Enable automatic voice reading for new results"}
+                    style={{
+                      fontSize: '16px',
+                      background: autoTTSEnabled ? '#28a745' : 'transparent',
+                      border: '2px solid ' + (autoTTSEnabled ? '#28a745' : '#ccc'),
+                      borderRadius: '8px',
+                      cursor: isAutoPlaying ? 'not-allowed' : 'pointer',
+                      padding: '8px 12px',
+                      color: autoTTSEnabled ? 'white' : '#666',
+                      transition: 'all 0.2s ease',
+                      opacity: isAutoPlaying ? 0.7 : 1,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    ⚙️ {autoTTSEnabled ? (isAutoPlaying ? '🔊 Auto-Reading...' : '🔈 Auto-Read ON') : '🔇 Auto-Read OFF'}
+                  </button>
+                </div>
+                {autoTTSEnabled && (
+                  <div className="settings-note" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                    ✨ New detection results will be automatically read aloud using AI voice
+                  </div>
+                )}
+              </div>
+              
               {/* Gemini Detection Results */}
               {geminiResults.length > 0 && (
                 <div className="gemini-section">
                   <div className="section-header">
                     <h3>🔬 AI Detection Results ({geminiResults.length})</h3>
-                    <button
-                      className="refresh-btn"
-                      onClick={fetchGeminiResults}
-                      title="Refresh results"
-                      style={{ fontSize: '16px', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      🔄
-                    </button>
+                    <div className="header-controls">
+                      <button
+                        className="refresh-btn"
+                        onClick={fetchGeminiResults}
+                        title="Refresh results"
+                        style={{ fontSize: '16px', background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        🔄
+                      </button>
+                    </div>
                   </div>
                   {geminiResults.slice().reverse().map((result, index) => (
                     <GeminiResultCard
                       key={result.id}
                       result={result}
                       onCommunityShare={handleCommunityShare}
+                      autoTTSEnabled={autoTTSEnabled}
+                      isAutoPlaying={isAutoPlaying}
                     />
                   ))}
                 </div>
@@ -643,6 +745,11 @@ function DetectionPage() {
                     Use the camera or upload images to analyze food items.
                     Results refresh automatically every 4 seconds.
                   </p>
+                  {autoTTSEnabled && (
+                    <p style={{ fontSize: '12px', color: '#28a745', marginTop: '8px', fontWeight: 'bold' }}>
+                      🔊 Auto-voice reading is enabled - new results will be read aloud automatically!
+                    </p>
+                  )}
                   <button
                     className="test-btn"
                     onClick={addTestDetection}
@@ -717,10 +824,121 @@ function DetectionPage() {
   );
 }
 
-function GeminiResultCard({ result, onCommunityShare }) {
+function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlaying }) {
   const safeToEat = result.safe?.toLowerCase().includes('yes');
   const communityShare = result.community?.toLowerCase().includes('yes');
   const [isShared, setIsShared] = React.useState(false);
+  const [isPlaying, setIsPlaying] = React.useState(false);
+
+  // Show visual indicator if this is the latest result and auto-TTS is playing
+  const isLatestAndAutoPlaying = isAutoPlaying && result.id === result.id; // Will be true for current result
+
+  // Text-to-speech function with improved female voice fallback
+  const speakResult = async () => {
+    if (isPlaying) return;
+    
+    setIsPlaying(true);
+    
+    // Construct the text to be spoken
+    const textToSpeak = `Detection result: ${result.name}. ` +
+      `Quality: ${result.quality}. ` +
+      `Quantity: ${result.quantity}. ` +
+      `Condition: ${result.condition}. ` +
+      `Safe to eat: ${result.safe || 'Unknown'}. ` +
+      `Community ready: ${result.community || 'Not specified'}.`;
+    
+    // Function to use browser TTS with female voice
+    const useBrowserTTS = () => {
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.2;  // Higher pitch for more feminine sound
+      
+      // Wait for voices to load if they haven't already
+      const setVoiceAndSpeak = () => {
+        const voices = speechSynthesis.getVoices();
+        const femaleVoice = voices.find(voice => {
+          const name = voice.name.toLowerCase();
+          return name.includes('female') || 
+                 name.includes('woman') ||
+                 name.includes('zira') ||
+                 name.includes('hazel') ||
+                 name.includes('susan') ||
+                 name.includes('cortana') ||
+                 name.includes('siri') ||
+                 (voice.lang.includes('en') && name.includes('2')); // Often female voices are numbered #2
+        });
+        
+        if (femaleVoice) {
+          utterance.voice = femaleVoice;
+          console.log('Using female voice:', femaleVoice.name);
+        } else {
+          console.log('No female voice found, using default with higher pitch');
+        }
+        
+        utterance.onend = () => setIsPlaying(false);
+        utterance.onerror = () => {
+          console.error('Speech synthesis error');
+          setIsPlaying(false);
+        };
+        
+        speechSynthesis.speak(utterance);
+      };
+      
+      if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.addEventListener('voiceschanged', setVoiceAndSpeak, { once: true });
+      } else {
+        setVoiceAndSpeak();
+      }
+    };
+    
+    try {
+      // Try ElevenLabs API first
+      const response = await fetch('http://localhost:5000/api/text-to-speech', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ text: textToSpeak })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.audio_data) {
+          // Convert base64 audio data to blob and play
+          const audioBlob = new Blob([
+            Uint8Array.from(atob(data.audio_data), c => c.charCodeAt(0))
+          ], { type: data.content_type });
+          
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          
+          audio.onended = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+          };
+          
+          audio.onerror = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+            console.error('Error playing ElevenLabs audio');
+            // Fallback to browser TTS if audio playback fails
+            useBrowserTTS();
+          };
+          
+          await audio.play();
+        } else {
+          throw new Error(data.error || 'Failed to generate audio');
+        }
+      } else {
+        // Fallback to browser TTS if ElevenLabs fails
+        useBrowserTTS();
+      }
+      
+    } catch (error) {
+      // Always use browser TTS as fallback  
+      useBrowserTTS();
+    }
+  };
 
   const handleCommunityShareClick = () => {
     if (isShared) return;
@@ -746,41 +964,76 @@ function GeminiResultCard({ result, onCommunityShare }) {
     <div className="gemini-result-card">
       <div className="result-header">
         <div className="result-title">
-          <h4>🍎 {result.name}</h4>
+          <h4>{result.name}</h4>
           <div className="confidence-badge">
             {Math.round((result.confidence || 0) * 100)}% confidence
           </div>
         </div>
-        <div className="timestamp">
-          {new Date(result.timestamp).toLocaleTimeString()}
+        <div className="result-actions">
+          <button
+            className="speaker-btn"
+            onClick={speakResult}
+            disabled={isPlaying || isAutoPlaying}
+            title={isAutoPlaying ? "Auto-speech playing..." : isPlaying ? "Playing audio..." : autoTTSEnabled ? "Manual speech (Auto-speech enabled)" : "Read result aloud"}
+            style={{
+              background: autoTTSEnabled ? '#e8f5e8' : 'none',
+              border: autoTTSEnabled ? '1px solid #28a745' : '1px solid #ddd',
+              fontSize: '20px',
+              cursor: (isPlaying || isAutoPlaying) ? 'not-allowed' : 'pointer',
+              padding: '4px',
+              borderRadius: '4px',
+              marginRight: '8px',
+              opacity: (isPlaying || isAutoPlaying) ? 0.6 : 1,
+              transition: 'all 0.2s ease',
+              position: 'relative'
+            }}
+          >
+            {isAutoPlaying ? '🔊' : isPlaying ? '🔊' : autoTTSEnabled ? '🔈✨' : '🔈'}
+            {autoTTSEnabled && (
+              <span 
+                style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-2px',
+                  fontSize: '8px',
+                  color: '#28a745'
+                }}
+              >
+                ⚙️
+              </span>
+            )}
+          </button>
+          <div className="timestamp">
+            {new Date(result.timestamp).toLocaleTimeString()}
+          </div>
         </div>
       </div>
 
       <div className="result-details">
         <div className="detail-row">
-          <span className="label">Quality:</span>
+          <span className="label"><strong>Quality:</strong></span>
           <span className="value quality">{result.quality}</span>
         </div>
 
         <div className="detail-row">
-          <span className="label">Quantity:</span>
+          <span className="label"><strong>Quantity:</strong></span>
           <span className="value">{result.quantity}</span>
         </div>
 
         <div className="detail-row">
-          <span className="label">Condition:</span>
+          <span className="label"><strong>Condition:</strong></span>
           <span className="value">{result.condition}</span>
         </div>
 
         <div className="detail-row">
-          <span className="label">Safe to Eat:</span>
+          <span className="label"><strong>Safe to Eat:</strong></span>
           <span className={`value safety ${safeToEat ? 'safe' : 'unsafe'}`}>
             {safeToEat ? '✅' : '⚠️'} {result.safe || 'Unknown'}
           </span>
         </div>
 
         <div className="detail-row">
-          <span className="label">Community Ready:</span>
+          <span className="label"><strong>Community Ready:</strong></span>
           <span className={`value community ${communityShare ? 'shareable' : 'not-shareable'}`}>
             {communityShare ? '🤝' : '❌'} {result.community || 'Not specified'}
           </span>
@@ -825,15 +1078,15 @@ function ResultCard({ item, onFreshPrimary, onSecondary, onSpoiledPrimary }) {
   return (
     <div className="result-card">
       <div className="result-header">
-        <div className="result-name">{`${item.emoji} ${item.name}`}</div>
+        <div className="result-name">{item.name}</div>
         <div className={`freshness-tag ${tagClass}`}>{tagText}</div>
       </div>
       <div className="result-meta">
         <div className="meta-item">
-          Expires<span>{item.days}</span>
+          <strong>Expires</strong><span>{item.days}</span>
         </div>
         <div className="meta-item">
-          Confidence<span>{item.confidence}%</span>
+          <strong>Confidence</strong><span>{item.confidence}%</span>
         </div>
       </div>
       <div className="freshness-bar">

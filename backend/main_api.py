@@ -17,6 +17,8 @@ import time
 import json
 from PIL import Image
 from io import BytesIO
+import requests
+from dotenv import load_dotenv
 
 # Import our custom modules
 from cooking_assistant_fixed import CookingAssistant
@@ -25,6 +27,9 @@ from realtime_object_detection import GeminiVisionDetector
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app, origins=["https://bytemequickly.tech", "http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:3000", "http://127.0.0.1:5173", "http://127.0.0.1:8080"])
+
+# Load environment variables
+load_dotenv()
 
 # Global instances
 cooking_assistant = None
@@ -108,6 +113,112 @@ def add_test_detection():
             'message': 'Test detection added',
             'result': test_result
         })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/text-to-speech', methods=['POST'])
+def text_to_speech():
+    """Convert text to speech using ElevenLabs API"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({
+                'success': False,
+                'error': 'No text provided'
+            }), 400
+        
+        # Get ElevenLabs API key from environment
+        api_key = os.getenv('ELEVENLABS_API_KEY')
+        # Use Rachel's voice ID directly for testing
+        voice_id = '21m00Tcm4TlvDq8ikWAM'  # Rachel - female voice
+        
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'error': 'ElevenLabs API key not configured'
+            }), 500
+        
+        # ElevenLabs API endpoint
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+        
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": api_key
+        }
+        
+        data = {
+            "text": text,
+            "model_id": "eleven_multilingual_v2",  # Better quality model
+            "voice_settings": {
+                "stability": 0.75,  # Higher stability for more natural speech
+                "similarity_boost": 0.75,  # Higher similarity for more human-like quality
+                "style": 0.0,  # Neutral style
+                "use_speaker_boost": True  # Enhanced speaker clarity
+            }
+        }
+        
+        response = requests.post(url, json=data, headers=headers)
+        
+        if response.status_code == 200:
+            # Return audio data as base64
+            audio_data = base64.b64encode(response.content).decode('utf-8')
+            
+            return jsonify({
+                'success': True,
+                'audio_data': audio_data,
+                'content_type': 'audio/mpeg'
+            })
+        else:
+            error_details = response.text if response.text else 'No error details'
+            print(f"ElevenLabs API Error {response.status_code}: {error_details}")
+            return jsonify({
+                'success': False,
+                'error': f'ElevenLabs API error: {response.status_code}',
+                'details': error_details
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/voices', methods=['GET'])
+def get_voices():
+    """Get available voices from ElevenLabs"""
+    try:
+        api_key = os.getenv('ELEVENLABS_API_KEY')
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'error': 'ElevenLabs API key not configured'
+            }), 500
+        
+        headers = {
+            "Accept": "application/json",
+            "xi-api-key": api_key
+        }
+        
+        response = requests.get("https://api.elevenlabs.io/v1/voices", headers=headers)
+        
+        if response.status_code == 200:
+            voices_data = response.json()
+            return jsonify({
+                'success': True,
+                'voices': voices_data.get('voices', [])
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'ElevenLabs API error: {response.status_code}'
+            }), 500
+            
     except Exception as e:
         return jsonify({
             'success': False,
