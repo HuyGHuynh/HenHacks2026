@@ -423,12 +423,9 @@ function DetectionPage() {
     }
   };
 
-  // Fetch results on component mount and set up polling
+  // Fetch results on component mount
   useEffect(() => {
     fetchGeminiResults();
-    // Poll for new results every 8 seconds (reduced from 4 seconds to minimize blinking)
-    const interval = setInterval(fetchGeminiResults, 8000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
