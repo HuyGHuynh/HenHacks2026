@@ -75,8 +75,11 @@ class GeminiVisionDetector:
     def setup_mongodb(self):
         """Set up MongoDB connection."""
         try:
-            # MongoDB connection parameters
-            connection_string = "mongodb+srv://doadmin:6H084P5h1ZR9c7YS@db-mongodb-nyc3-54229-ae30f003.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-nyc3-54229"
+            # MongoDB connection parameters from environment
+            connection_string = os.getenv('MONGODB_URI')
+            if not connection_string:
+                print("Warning: MONGODB_URI not found in environment variables. Database disabled.")
+                return
             
             # Connect to MongoDB
             self.mongo_client = MongoClient(connection_string)
@@ -228,7 +231,7 @@ For EACH item you detect, provide:
             4. Quantity: [Small/Medium/Large portion]
             5. Condition: [Ripe/Raw/Cooked/Spoiled/Moldy/etc.]
             6. Safe to Eat: [Yes/No with reason]
-            7. Community Share: [Yes/No - suitable for sharing/donating to community]
+            7. Community Share: [Yes/No - suitable for sharing/donating to community based on the food quality and condition]
             
 Format each detection as:
             ITEM: [name]
