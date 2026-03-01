@@ -1,5 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 
+// Add pulse animation for reading indicator
+const pulseAnimation = `
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+  }
+`;
+
+// Inject animation styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = pulseAnimation;
+  document.head.appendChild(styleSheet);
+}
+
 const FOOD_DATA = [
   { name: "Apple", status: "fresh", freshness: 88, days: "~6 days", confidence: 97 },
   { name: "Bread Loaf", status: "warning", freshness: 38, days: "Today", confidence: 91 },
@@ -11,16 +26,16 @@ const FOOD_DATA = [
 ];
 
 const INITIAL_NOTIFICATIONS = [
-  { id: "n1", icon: "🏦", iconClass: "notif-bank", title: "City Food Bank alerted", sub: "2 items available for pickup · 0.4 mi away", time: "2m ago" },
-  { id: "n2", icon: "👋", iconClass: "notif-neighbor", title: "Neighbor Sarah M. notified", sub: "Claimed: Bread loaf · Expires today", time: "15m ago" },
-  { id: "n3", icon: "🏦", iconClass: "notif-bank", title: "Sunshine Shelter alerted", sub: "Produce bundle accepted · Pickup scheduled", time: "1h ago" },
-  { id: "n4", icon: "⚠️", iconClass: "notif-alert", title: "Spoilage detected", sub: "Strawberries - composting recommended", time: "3h ago" },
-  { id: "n5", icon: "👋", iconClass: "notif-neighbor", title: "3 neighbors in your network", sub: "Tap to manage sharing preferences", time: "Settings" },
+  { id: "n1", icon: "", iconClass: "notif-bank", title: "City Food Bank alerted", sub: "2 items available for pickup · 0.4 mi away", time: "2m ago" },
+  { id: "n2", icon: "", iconClass: "notif-neighbor", title: "Neighbor Sarah M. notified", sub: "Claimed: Bread loaf · Expires today", time: "15m ago" },
+  { id: "n3", icon: "", iconClass: "notif-bank", title: "Sunshine Shelter alerted", sub: "Produce bundle accepted · Pickup scheduled", time: "1h ago" },
+  { id: "n4", icon: "", iconClass: "notif-alert", title: "Spoilage detected", sub: "Strawberries - composting recommended", time: "3h ago" },
+  { id: "n5", icon: "", iconClass: "notif-neighbor", title: "3 neighbors in your network", sub: "Tap to manage sharing preferences", time: "Settings" },
 ];
 
 const RECIPE_DATABASE = [
   {
-    emoji: "🍳",
+    emoji: "",
     title: "Herb & Egg Frittata",
     description: "A golden, fluffy frittata loaded with pantry vegetables and herbs.",
     time: "22 min",
@@ -38,7 +53,7 @@ const RECIPE_DATABASE = [
     ],
   },
   {
-    emoji: "🍲",
+    emoji: "",
     title: "One-Pot Tomato Rice",
     description: "Savory tomato rice with garlic and vegetables, all cooked in one pot.",
     time: "30 min",
@@ -56,7 +71,7 @@ const RECIPE_DATABASE = [
     ],
   },
   {
-    emoji: "🥗",
+    emoji: "",
     title: "Roasted Veggie Bowl",
     description: "Roasted vegetables over grains with a bright lemon-garlic dressing.",
     time: "35 min",
@@ -73,7 +88,7 @@ const RECIPE_DATABASE = [
     ],
   },
   {
-    emoji: "🍝",
+    emoji: "",
     title: "Quick Garlic Pasta",
     description: "Silky pasta with garlic, olive oil, chili, and a finishing shower of cheese.",
     time: "20 min",
@@ -90,7 +105,7 @@ const RECIPE_DATABASE = [
     ],
   },
   {
-    emoji: "🍗",
+    emoji: "",
     title: "Lemon Herb Chicken",
     description: "Pan-seared chicken with lemon, garlic, herbs, and wilted greens.",
     time: "28 min",
@@ -107,7 +122,7 @@ const RECIPE_DATABASE = [
     ],
   },
   {
-    emoji: "🥘",
+    emoji: "",
     title: "Potato & Egg Hash",
     description: "Crispy potatoes with caramelized onion and soft eggs in one pan.",
     time: "25 min",
@@ -315,7 +330,7 @@ function DetectionPage() {
   const handleCommunityShare = (result, shared) => {
     if (shared) {
       addNotification(
-        "🤝",
+        "",
         "notif-neighbor",
         "Community sharing confirmed",
         `"${result.name}" shared with local food banks and neighbors`,
@@ -323,7 +338,7 @@ function DetectionPage() {
       );
     } else {
       addNotification(
-        "💾",
+        "",
         "notif-alert",
         "Item saved to database",
         `"${result.name}" saved to your personal database`,
@@ -339,7 +354,7 @@ function DetectionPage() {
       const latestResult = geminiResults[geminiResults.length - 1];
       
       addNotification(
-        "📊",
+        "",
         "notif-alert",
         "New detection results",
         `${newCount} new food item${newCount > 1 ? 's' : ''} detected`,
@@ -372,7 +387,7 @@ function DetectionPage() {
       console.error('Network error fetching Gemini results:', error);
       // Add user notification for network errors
       addNotification(
-        "⚠️",
+        "",
         "notif-alert",
         "Connection Error",
         "Failed to fetch latest results. Check connection.",
@@ -434,10 +449,10 @@ function DetectionPage() {
     }
     const nextAlert =
       food.status === "fresh"
-        ? { kind: "good-alert", icon: "📦", text: `3 food banks + 2 neighbors notified about your ${food.name}!` }
+        ? { kind: "good-alert", icon: "", text: `3 food banks + 2 neighbors notified about your ${food.name}!` }
         : food.status === "warning"
-          ? { kind: "good-alert", icon: "⚡", text: `${food.name} expiring soon - City Food Bank alerted for urgent pickup.` }
-          : { kind: "bad-alert", icon: "♻️", text: `${food.name} is spoiled. Consider composting to reduce methane emissions.` };
+          ? { kind: "good-alert", icon: "", text: `${food.name} expiring soon - City Food Bank alerted for urgent pickup.` }
+          : { kind: "bad-alert", icon: "", text: `${food.name} is spoiled. Consider composting to reduce methane emissions.` };
     setTimeout(() => setAlertState(nextAlert), 600);
     alertTimeoutRef.current = window.setTimeout(() => setAlertState(null), 5000);
   };
@@ -541,7 +556,7 @@ function DetectionPage() {
 
               // Add success notification
               addNotification(
-                "📸",
+                "",
                 "notif-alert",
                 "Food analyzed!",
                 `Detected ${data.count} food items`,
@@ -631,10 +646,10 @@ function DetectionPage() {
     const label = item.status === "warning" ? "Scheduled" : "Sent!";
     updateResultAction(item.id, "primary", label);
     if (item.status === "warning") {
-      addNotification("🏦", "notif-bank", "Urgent pickup scheduled", `${item.name} reserved for same-day pickup`, "Just now");
+      addNotification("", "notif-bank", "Urgent pickup scheduled", `${item.name} reserved for same-day pickup`, "Just now");
       return;
     }
-    addNotification("🏦", "notif-bank", "Food bank alerted", "Item claimed for pickup · Pending confirmation", "Just now");
+    addNotification("", "notif-bank", "Food bank alerted", "Item claimed for pickup · Pending confirmation", "Just now");
   };
 
   const handleSecondaryAction = (item) => {
@@ -643,7 +658,7 @@ function DetectionPage() {
     }
     if (item.status === "fresh") {
       updateResultAction(item.id, "secondary", "Shared!");
-      addNotification("👋", "notif-neighbor", "Neighbor notified", "Sarah M. has been alerted", "Just now");
+      addNotification("", "notif-neighbor", "Neighbor notified", "Sarah M. has been alerted", "Just now");
       return;
     }
     if (item.status === "warning") {
@@ -715,29 +730,29 @@ function DetectionPage() {
               <div className={`badge-status ${lastResult?.status || "fresh"}`}>
                 {lastResult
                   ? lastResult.status === "fresh"
-                    ? `✓ Fresh - ${lastResult.days} left`
+                    ? `Fresh - ${lastResult.days} left`
                     : lastResult.status === "warning"
-                      ? `⚠ Use soon - ${lastResult.days}`
-                      : `✕ Spoiled - ${lastResult.days}`
-                  : "✓ Fresh - 6 days left"}
+                      ? `Use soon - ${lastResult.days}`
+                      : `Spoiled - ${lastResult.days}`
+                  : "Fresh - 6 days left"}
               </div>
             </div>
           </div>
 
           <div className={`alert-banner ${alertState ? `${alertState.kind} show` : ""}`.trim()}>
-            <span>{alertState?.icon || "📦"}</span>
+            <span>{alertState?.icon || ""}</span>
             <div className="alert-text">{alertState?.text || "Alerting nearby food banks and neighbors..."}</div>
           </div>
 
           <div className="camera-controls">
             <button className={`btn-primary ${scanning ? "scanning" : ""}`.trim()} onClick={handleStartScan} type="button">
-              {scanning ? "⟳ Analyzing..." : cameraLive ? "📸 Analyze Food" : results.length ? "▶ Scan Again" : "▶ Start Scan"}
+              {scanning ? "Analyzing..." : cameraLive ? "Analyze Food" : results.length ? "Scan Again" : "Start Scan"}
             </button>
             <button className="btn-secondary" onClick={handleDemoScan} type="button">
               Demo
             </button>
             <button className="btn-secondary" onClick={handleOpenCamera} type="button">
-              📷 Camera
+              Camera
             </button>
           </div>
         </div>
@@ -760,7 +775,7 @@ function DetectionPage() {
               {/* Auto-TTS Settings - Always visible at top */}
               <div className="auto-tts-settings">
                 <div className="settings-header">
-                  <span className="settings-label">🗣️ Voice Assistant</span>
+                  <span className="settings-label">Voice Assistant</span>
                   <button
                     className="auto-tts-btn"
                     onClick={() => setAutoTTSEnabled(!autoTTSEnabled)}
@@ -779,12 +794,12 @@ function DetectionPage() {
                       fontWeight: 'bold'
                     }}
                   >
-                    ⚙️ {autoTTSEnabled ? (isAutoPlaying ? '🔊 Auto-Reading...' : '🔈 Auto-Read ON') : '🔇 Auto-Read OFF'}
+                    {autoTTSEnabled ? (isAutoPlaying ? 'Auto-Reading...' : 'Auto-Read ON') : 'Auto-Read OFF'}
                   </button>
                 </div>
                 {autoTTSEnabled && (
                   <div className="settings-note" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                    ✨ New detection results will be automatically read aloud using AI voice
+                    New detection results will be automatically read aloud using AI voice
                   </div>
                 )}
               </div>
@@ -793,7 +808,7 @@ function DetectionPage() {
               {geminiResults.length > 0 && (
                 <div className="gemini-section">
                   <div className="section-header">
-                    <h3>🔬 AI Detection Results ({geminiResults.length})</h3>
+                    <h3>AI Detection Results ({geminiResults.length})</h3>
                     <div className="header-controls">
                       <button
                         className="refresh-btn"
@@ -1169,7 +1184,7 @@ function GeminiResultCard({ result, onCommunityShare, autoTTSEnabled, isAutoPlay
 
 function ResultCard({ item, onFreshPrimary, onSecondary, onSpoiledPrimary }) {
   const tagClass = item.status === "fresh" ? "tag-fresh" : item.status === "warning" ? "tag-warn" : "tag-spoiled";
-  const tagText = item.status === "fresh" ? "✓ Fresh" : item.status === "warning" ? "⚠ Expiring" : "✕ Spoiled";
+  const tagText = item.status === "fresh" ? "Fresh" : item.status === "warning" ? "Expiring" : "Spoiled";
   const fillClass = item.status === "fresh" ? "fill-fresh" : item.status === "warning" ? "fill-warn" : "fill-spoiled";
 
   return (
@@ -1763,6 +1778,13 @@ function RecipePage() {
   const [results, setResults] = useState([]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [saved, setSaved] = useState([]);
+  const [autoReadEnabled, setAutoReadEnabled] = useState(false);
+  const [isReading, setIsReading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [helpIngredient, setHelpIngredient] = useState(null);
+  const [helpMessage, setHelpMessage] = useState('');
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
 
   const quickAdd = ["Eggs", "Chicken", "Tomatoes", "Garlic", "Onion", "Pasta", "Rice", "Spinach", "Carrots", "Cheese", "Potatoes", "Lemon"];
   const filterOptions = ["Vegetarian", "Vegan", "Gluten-Free", "Quick"];
@@ -1788,35 +1810,124 @@ function RecipePage() {
     setFilters((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
   };
 
-  const generateRecipes = () => {
+  const generateRecipes = async () => {
     if (!tags.length) {
       return;
     }
     setLoading(true);
-    window.setTimeout(() => {
-      const scored = RECIPE_DATABASE.map((recipe) => {
-        const matches = recipe.usedIngredients.filter((ingredient) =>
-          tags.some(
-            (tag) =>
-              tag.toLowerCase().includes(ingredient.toLowerCase()) ||
-              ingredient.toLowerCase().includes(tag.toLowerCase()),
-          ),
-        );
-        const filterOk =
-          !filters.length ||
-          filters.every((filter) =>
-            filter === "Quick"
-              ? parseInt(recipe.time, 10) < 30
-              : recipe.badges.some((badge) => badge.toLowerCase().includes(filter.toLowerCase())),
-          );
-        return { ...recipe, score: matches.length + (filterOk ? 0 : -5), matchedCount: matches.length };
-      })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3);
+    
+    try {
+      // Call Gemini-powered recipe suggestion API
+      console.log('Calling AI recipe API with ingredients:', tags);
+      const response = await fetch('http://localhost:5000/api/suggest-recipes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ingredients: tags
+        })
+      });
 
-      setResults(scored);
-      setLoading(false);
-    }, 1200);
+      console.log('API Response status:', response.status, response.statusText);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('API Response data:', data);
+        
+        if (data.success && data.suggested_dishes) {
+          console.log('Using AI-generated recipes:', data.suggested_dishes.length, 'recipes');
+          
+          // Parse the raw response to extract details for each dish
+          const rawLines = data.raw_response.split('\n').filter(line => line.trim());
+          
+          // Transform API response to match our UI structure
+          const apiRecipes = data.suggested_dishes.map((dishName, index) => {
+            // Try to find the corresponding description in raw_response
+            const dishLine = rawLines.find(line => line.includes(dishName));
+            const description = dishLine ? 
+              dishLine.split(':').slice(1).join(':').trim() : 
+              'AI-generated recipe suggestion based on your ingredients';
+            
+            return {
+              id: `api-${index}`,
+              emoji: "",
+              title: dishName,
+              description: description,
+              time: "25-30 min", // Default for AI recipes
+              servings: "2-4",
+              difficulty: "Medium",
+              calories: "350",
+              badges: ["AI-Generated", "Fresh Ingredients"],
+              usedIngredients: tags, // The ingredients we searched with
+              extraIngredients: [], // Will be filled when getting detailed recipe
+              steps: ['Click "View Recipe" for detailed AI-generated cooking instructions'],
+              score: 10, // API recipes get high priority
+              matchedCount: tags.length,
+              isAIGenerated: true
+            };
+          });
+
+          // Apply filters to API results
+          const filteredRecipes = apiRecipes.filter(recipe => {
+            if (!filters.length) return true;
+            return filters.every((filter) => {
+              if (filter === "Quick") {
+                return parseInt(recipe.time, 10) < 30;
+              }
+              return recipe.badges.some((badge) => 
+                badge.toLowerCase().includes(filter.toLowerCase())
+              );
+            });
+          });
+
+          setResults(filteredRecipes.slice(0, 3));
+        } else {
+          console.warn('API response missing success or suggested_dishes:', data);
+          // Fallback to local recipes if API fails
+          generateLocalRecipes();
+        }
+      } else {
+        console.error('API call failed with status:', response.status);
+        const errorText = await response.text();
+        console.error('Error details:', errorText);
+        // Fallback to local recipes if API call fails
+        console.warn('Falling back to local recipes');
+        generateLocalRecipes();
+      }
+    } catch (error) {
+      console.error('Network error calling recipe API:', error);
+      // Fallback to local recipes
+      console.warn('Falling back to local recipes due to network error');
+      generateLocalRecipes();
+    }
+    
+    setLoading(false);
+  };
+
+  // Fallback function using local recipes
+  const generateLocalRecipes = () => {
+    const scored = RECIPE_DATABASE.map((recipe) => {
+      const matches = recipe.usedIngredients.filter((ingredient) =>
+        tags.some(
+          (tag) =>
+            tag.toLowerCase().includes(ingredient.toLowerCase()) ||
+            ingredient.toLowerCase().includes(tag.toLowerCase()),
+        ),
+      );
+      const filterOk =
+        !filters.length ||
+        filters.every((filter) =>
+          filter === "Quick"
+            ? parseInt(recipe.time, 10) < 30
+            : recipe.badges.some((badge) => badge.toLowerCase().includes(filter.toLowerCase())),
+        );
+      return { ...recipe, score: matches.length + (filterOk ? 0 : -5), matchedCount: matches.length };
+    })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    setResults(scored);
   };
 
   const handleInputKeyDown = (event) => {
@@ -1833,17 +1944,626 @@ function RecipePage() {
     setSaved((current) => (current.includes(title) ? current.filter((item) => item !== title) : [...current, title]));
   };
 
+  // Text-to-Speech using ElevenLabs API
+  const speakText = async (text) => {
+    if (!text || isReading) return;
+    
+    setIsReading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/text-to-speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text })
+      });
+
+      if (response.ok) {
+        // Parse the JSON response which contains base64-encoded audio
+        const data = await response.json();
+        
+        if (data.success && data.audio_data) {
+          // Decode base64 audio data to binary
+          const binaryString = atob(data.audio_data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          
+          // Create blob with explicit MIME type for MP3
+          const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          
+          audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            setIsReading(false);
+          };
+          
+          audio.onerror = (e) => {
+            console.error('Audio playback error:', e);
+            console.error('Audio source:', audioUrl);
+            URL.revokeObjectURL(audioUrl);
+            setIsReading(false);
+          };
+          
+          // Play with error handling
+          try {
+            await audio.play();
+          } catch (playError) {
+            console.error('Play error:', playError);
+            setIsReading(false);
+          }
+        } else {
+          console.error('Invalid TTS response:', data);
+          setIsReading(false);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('TTS API failed:', response.status, errorText);
+        setIsReading(false);
+      }
+    } catch (error) {
+      console.error('Error with text-to-speech:', error);
+      setIsReading(false);
+    }
+  };
+
+  // Click-to-read helper for important text
+  const makeReadable = (text, label = '') => {
+    return {
+      onClick: (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        const readText = label ? `${label}: ${text}` : text;
+        speakText(readText);
+      },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.backgroundColor = '#f0f8ff';
+        e.currentTarget.style.transition = 'background-color 0.2s';
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.backgroundColor = '';
+      },
+      style: { 
+        cursor: 'pointer',
+        position: 'relative'
+      },
+      title: `🔊 Click to read aloud: "${label || 'text'}"`
+    };
+  };
+
+  // Auto-read recipe when results are generated
+  useEffect(() => {
+    if (autoReadEnabled && results.length > 0) {
+      // Just read the recipe names when results are generated
+      const recipeNames = results.map((recipe, index) => 
+        `Recipe ${index + 1}: ${recipe.title.replace(/\*\*/g, '')}`
+      ).join('. ');
+      
+      speakText(`I found ${results.length} recipe${results.length > 1 ? 's' : ''} for you. ${recipeNames}. Click on any recipe to hear more details.`);
+    }
+  }, [results, autoReadEnabled]);
+
+  // Function to read all recipe names
+  const readAllRecipeNames = () => {
+    if (results.length === 0) return;
+    
+    const recipeNames = results.map((recipe, index) => {
+      const cleanTitle = recipe.title.replace(/\*\*/g, '');
+      return `Recipe ${index + 1}: ${cleanTitle}. Cook time: ${recipe.time}. Difficulty: ${recipe.difficulty}.`;
+    }).join(' ');
+    
+    speakText(`Here are your ${results.length} recipe options. ${recipeNames}`);
+  };
+
+  // Function to read cooking instructions only
+  const readCookingInstructions = (recipe) => {
+    if (!recipe || !recipe.steps) return;
+    
+    const instructions = recipe.steps.map((step, idx) => {
+      const cleanStep = step.replace(/<[^>]*>/g, '').replace(/\*\*/g, '');
+      return `Step ${idx + 1}: ${cleanStep}`;
+    }).join('. ');
+    
+    speakText(`Cooking instructions for ${recipe.title.replace(/\*\*/g, '')}. ${instructions}`);
+  };
+
+  // Open help modal for ingredient
+  const openHelpModal = (ingredient) => {
+    setHelpIngredient(ingredient);
+    setHelpMessage('');
+    setShowHelpModal(true);
+  };
+
+  // Generate AI help message
+  const generateHelpMessage = async () => {
+    if (!helpIngredient) return;
+    
+    setIsGeneratingMessage(true);
+    try {
+      const ingredientName = `${helpIngredient.quantity} ${helpIngredient.unit} ${helpIngredient.name}`.trim();
+      
+      // Call Gemini-powered community help API
+      const response = await fetch('http://localhost:5000/api/generate-help-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          recipe_name: selectedRecipe?.title?.replace(/\*\*/g, '') || 'my recipe',
+          need_ingredient: ingredientName,
+          have_ingredients: tags
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.message) {
+          setHelpMessage(data.message);
+        } else {
+          // Fallback message
+          const message = `Hi! I'm making ${selectedRecipe?.title?.replace(/\*\*/g, '') || 'a recipe'} and I need ${ingredientName}. I already have ${tags.join(', ')}. Could anyone help me out? Thanks!`;
+          setHelpMessage(message);
+        }
+      } else {
+        // Fallback message
+        const message = `Hi! I need ${ingredientName} for my recipe. Can anyone help?`;
+        setHelpMessage(message);
+      }
+    } catch (error) {
+      console.error('Error generating help message:', error);
+      const ingredientName = `${helpIngredient.quantity} ${helpIngredient.unit} ${helpIngredient.name}`.trim();
+      const message = `Hi! I need ${ingredientName} for my recipe. Can anyone help?`;
+      setHelpMessage(message);
+    }
+    setIsGeneratingMessage(false);
+  };
+
+  // Send help request (placeholder - could integrate with messaging/social features)
+  const sendHelpRequest = async () => {
+    if (!helpMessage.trim()) return;
+    
+    try {
+      const ingredientName = `${helpIngredient.quantity} ${helpIngredient.unit} ${helpIngredient.name}`.trim();
+      
+      // Post to community help API
+      const response = await fetch('http://localhost:5000/api/post-help-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          recipe_name: selectedRecipe?.title?.replace(/\*\*/g, '') || 'my recipe',
+          need_ingredient: ingredientName,
+          have_ingredients: tags,
+          message: helpMessage
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Copy to clipboard and show success
+        navigator.clipboard.writeText(helpMessage).then(() => {
+          alert('✅ Help request posted successfully! Message copied to clipboard.');
+          setShowHelpModal(false);
+        }).catch(err => {
+          console.error('Failed to copy message:', err);
+          alert('✅ Help request posted successfully!\n\n' + helpMessage);
+          setShowHelpModal(false);
+        });
+      } else {
+        // Still copy to clipboard even if API fails
+        navigator.clipboard.writeText(helpMessage).then(() => {
+          alert('Message copied to clipboard! Share it with your community.');
+          setShowHelpModal(false);
+        }).catch(err => {
+          alert('Message ready: ' + helpMessage);
+          setShowHelpModal(false);
+        });
+      }
+    } catch (error) {
+      console.error('Error sending help request:', error);
+      // Fallback: just copy to clipboard
+      navigator.clipboard.writeText(helpMessage).then(() => {
+        alert('Message copied to clipboard! Share it with your friends or community.');
+        setShowHelpModal(false);
+      }).catch(err => {
+        alert('Message ready: ' + helpMessage);
+        setShowHelpModal(false);
+      });
+    }
+  };
+
+  // Auto-read recipe details when modal opens
+  useEffect(() => {
+    if (autoReadEnabled && selectedRecipe) {
+      const ingredientsList = getFormattedIngredients(selectedRecipe)
+        .map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`)
+        .join(', ');
+      
+      const recipeDetails = `${selectedRecipe.title}. Cook time: ${selectedRecipe.time}. Servings: ${selectedRecipe.servings}. Ingredients: ${ingredientsList}. Now reading cooking steps.`;
+      
+      speakText(recipeDetails);
+    }
+  }, [selectedRecipe, autoReadEnabled]);
+
+  // Get detected ingredients from localStorage or API
+  const getDetectedIngredients = () => {
+    try {
+      // Try to get from localStorage first (from detection page)
+      const storedResults = localStorage.getItem('geminiResults');
+      if (storedResults) {
+        const results = JSON.parse(storedResults);
+        return results.map(result => result.name).filter(name => name);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error getting detected ingredients:', error);
+      return [];
+    }
+  };
+
+  // Load detected ingredients into tags
+  const loadDetectedIngredients = () => {
+    const detectedIngredients = getDetectedIngredients();
+    const normalizedIngredients = detectedIngredients
+      .map(name => normalizeTag(name))
+      .filter(name => name && !tags.includes(name));
+    
+    if (normalizedIngredients.length > 0) {
+      setTags(prev => [...prev, ...normalizedIngredients]);
+    }
+  };
+
+  // Format recipe instructions with better highlighting
+  const formatRecipeStep = (step) => {
+    if (!step) return '';
+    
+    // Important cooking action words to highlight
+    const actionWords = [
+      'Season', 'Sear', 'Cook', 'Add', 'Heat', 'Sauté', 'Simmer', 'Boil', 'Fry', 'Bake', 'Roast', 'Grill',
+      'Chop', 'Dice', 'Slice', 'Mince', 'Mix', 'Stir', 'Whisk', 'Blend', 'Combine', 'Toss', 'Fold',
+      'Pour', 'Drain', 'Remove', 'Set aside', 'Serve', 'Garnish', 'Rest', 'Cool', 'Chill', 'Freeze',
+      'Preheat', 'Reduce', 'Increase', 'Lower', 'Raise', 'Cover', 'Uncover', 'Scrape'
+    ];
+    
+    // Convert markdown bold (**text**) to HTML
+    let formatted = step.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Make the first action word bold if it's at the beginning
+    const firstWord = formatted.split(/[\s:]/)[0];
+    if (actionWords.some(action => action.toLowerCase() === firstWord.toLowerCase())) {
+      formatted = formatted.replace(firstWord, `<strong>${firstWord}</strong>`);
+    }
+    
+    // Highlight temperature and time references
+    formatted = formatted.replace(/(\d+)°([CF])/g, '<span style="background: #fff3cd; padding: 1px 3px; border-radius: 3px; font-weight: bold;">$1°$2</span>');
+    formatted = formatted.replace(/(\d+-?\d*)\s?(minutes?|mins?|hours?|hrs?)/gi, '<span style="background: #d4edda; padding: 1px 3px; border-radius: 3px; font-weight: bold;">$1 $2</span>');
+    
+    // Highlight measurements
+    formatted = formatted.replace(/(\d+\/?\d*)\s?(cups?|tbsp|tsp|tablespoons?|teaspoons?|oz|lbs?|pounds?)/gi, '<span style="background: #cce5ff; padding: 1px 3px; border-radius: 3px; font-weight: bold;">$1 $2</span>');
+    
+    return formatted;
+  };
+
+  // Parse ingredient string into structured components
+  const parseIngredient = (ingredientText, isAvailable = false) => {
+    if (!ingredientText) return null;
+    
+    // Remove markdown and clean up
+    let cleaned = ingredientText.replace(/\*\*(.*?)\*\*/g, '$1').trim();
+    
+    // Check if this ingredient matches user's tags
+    const matchesUserTags = isIngredientInUserTags(cleaned, tags);
+    
+    // Extract quantity pattern (numbers, fractions, ranges)
+    const quantityMatch = cleaned.match(/^([\d\/.\-–]+(?:\s*to\s*[\d\/.\-–]+)?)(\s*)/);
+    let quantity = '';
+    let remainder = cleaned;
+    
+    if (quantityMatch) {
+      quantity = quantityMatch[1];
+      remainder = cleaned.substring(quantityMatch[0].length);
+    }
+    
+    // Extract unit (cups, tbsp, lbs, etc.)
+    const unitMatch = remainder.match(/^([a-zA-Z]+(?:\s+[a-zA-Z]+)?)(\s*)/);
+    let unit = '';
+    
+    if (unitMatch) {
+      unit = unitMatch[1];
+      remainder = remainder.substring(unitMatch[0].length);
+    }
+    
+    // Extract ingredient name (everything before parentheses or preparation notes)
+    const nameMatch = remainder.match(/^([^(,]+)/);
+    let name = nameMatch ? nameMatch[1].trim() : remainder;
+    
+    // Extract preparation notes (in parentheses or after commas)
+    const prepMatch = remainder.match(/\(([^)]+)\)|,\s*(.+)$/);
+    let preparation = prepMatch ? (prepMatch[1] || prepMatch[2]) : '';
+    
+    return {
+      quantity: quantity.trim(),
+      unit: unit.trim(),
+      name: name.trim(),
+      preparation: preparation.trim(),
+      original: ingredientText,
+      matchesUserTags: matchesUserTags,
+      isAvailable: matchesUserTags
+    };
+  };
+
+  // Format dish title by converting markdown to HTML bold
+  const formatDishTitle = (title) => {
+    if (!title) return '';
+    // Convert **text** to <strong>text</strong>
+    return title.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  };
+
+  // Get all ingredients with better parsing
+  const getFormattedIngredients = (recipe) => {
+    if (!recipe) return [];
+    
+    const allIngredients = [...(recipe.usedIngredients || []), ...(recipe.extraIngredients || [])];
+    const uniqueIngredients = [...new Set(allIngredients)];
+    
+    return uniqueIngredients.map((ingredient, index) => {
+      const parsed = parseIngredient(ingredient);
+      
+      // Check if ingredient is in user's input tags
+      const isFromUserInput = isIngredientInUserTags(ingredient, tags);
+      
+      return {
+        ...parsed,
+        isFromUserInput: isFromUserInput,
+        id: `ingredient-${index}`
+      };
+    }).filter(ing => ing.name); // Only include ingredients with actual names
+  };
+
+  // Fetch detailed recipe when user clicks "View Recipe"
+  // Validate if an ingredient matches user's input tags
+  const isIngredientInUserTags = (ingredient, userTags) => {
+    const cleanIngredient = ingredient.toLowerCase()
+      .replace(/\*\*/g, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim();
+    
+    return userTags.some(tag => {
+      const cleanTag = tag.toLowerCase().trim();
+      // Check if tag is contained in ingredient or vice versa
+      return cleanIngredient.includes(cleanTag) || cleanTag.includes(cleanIngredient);
+    });
+  };
+
+  const fetchRecipeDetails = async (recipe) => {
+    console.log('fetchRecipeDetails called with recipe:', recipe);
+    
+    // Check if we need to fetch detailed recipe
+    const needsDetails = recipe.isAIGenerated && (
+      !recipe.hasDetailedRecipe || 
+      !recipe.detailedSteps || 
+      recipe.detailedSteps.length === 0 ||
+      recipe.steps.length === 1 // Only has placeholder text
+    );
+    
+    console.log('Needs details fetch:', needsDetails);
+    
+    if (needsDetails) {
+      try {
+        console.log('Fetching detailed recipe for:', recipe.title);
+        const response = await fetch('http://localhost:5000/api/get-recipe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            dish_name: recipe.title,
+            ingredients: tags
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Detailed recipe response:', data);
+          
+          if (data.success && data.recipe) {
+            // Parse the markdown-formatted recipe
+            const recipeText = data.recipe;
+            
+            // Extract ingredients section with better parsing
+            const ingredientsMatch = recipeText.match(/### INGREDIENTS NEEDED:(.*?)(?=###|---|\n\n[A-Z])/s);
+            let ingredients = [];
+            let availableIngredients = [];
+            let additionalIngredients = [];
+            
+            if (ingredientsMatch) {
+              const parsedIngredients = ingredientsMatch[1]
+                .split('\n')
+                .filter(line => line.trim().startsWith('*'))
+                .map(line => {
+                  // Clean up the line: remove *, markdown, and extra spaces
+                  let cleaned = line.replace(/^\s*\*\s*/, '').trim();
+                  // Remove markdown bold formatting but keep the content
+                  cleaned = cleaned.replace(/\*\*(.*?)\*\*:\s*/, '$1: ');
+                  return cleaned;
+                })
+                .filter(ing => ing && ing.length > 0);
+              
+              // Categorize ingredients based on user's input tags
+              parsedIngredients.forEach(ingredient => {
+                if (isIngredientInUserTags(ingredient, tags)) {
+                  availableIngredients.push(ingredient);
+                } else {
+                  additionalIngredients.push(ingredient);
+                }
+              });
+              
+              ingredients = parsedIngredients;
+              console.log('Ingredient validation:', {
+                total: ingredients.length,
+                available: availableIngredients.length,
+                additional: additionalIngredients.length
+              });
+            }
+            
+            // Extract cooking steps
+            const stepsMatch = recipeText.match(/### COOKING STEPS:(.*?)(?=###|\n\n[A-Z]|$)/s);
+            let steps = [];
+            if (stepsMatch) {
+              steps = stepsMatch[1]
+                .split(/\d+\.\s*/)
+                .filter(step => step.trim())
+                .map(step => step.replace(/^\*\*(.*?)\*\*:/, '$1:').trim())
+                .filter(step => step);
+            }
+            
+            // Update recipe with detailed information
+            const updatedRecipe = {
+              ...recipe,
+              steps: steps.length > 0 ? steps : recipe.steps,
+              detailedSteps: steps,
+              extraIngredients: ingredients,
+              availableIngredients: availableIngredients,
+              additionalIngredients: additionalIngredients,
+              hasDetailedRecipe: true,
+              ingredientMatchPercentage: ingredients.length > 0 ? 
+                Math.round((availableIngredients.length / ingredients.length) * 100) : 100
+            };
+            
+            console.log('Updated recipe with details:', updatedRecipe);
+            setSelectedRecipe(updatedRecipe);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching detailed recipe:', error);
+      }
+    }
+    // Fallback to original recipe data
+    setSelectedRecipe(recipe);
+  };
+
+  const detectedIngredients = getDetectedIngredients();
+
   return (
     <>
       <nav className="rec-nav">
         <a className="logo" href="./dashboard.html">
           Fresh<em>Loop</em>
         </a>
+        
+        {/* Reading Status Indicator */}
+        {isReading && (
+          <div style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '20px',
+            background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+            color: 'white',
+            padding: '12px 20px',
+            borderRadius: '30px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            zIndex: 9999,
+            animation: 'pulse 1.5s ease-in-out infinite'
+          }}>
+            <span style={{ fontSize: '20px' }}>🔊</span>
+            <span style={{ fontWeight: 'bold' }}>Reading aloud...</span>
+          </div>
+        )}
+        
         <div className="rec-nav-right">
           <a className="rec-nav-link" href="./dashboard.html">Dashboard</a>
           <a className="rec-nav-link" href="./index.html">Detect</a>
           <a className="rec-nav-link active" href="./recipe.html">Recipes</a>
           <a className="rec-nav-link" href="./social.html">Community</a>
+          
+          {/* Settings Gear Button */}
+          <button
+            className="rec-settings-btn"
+            onClick={() => setShowSettings(!showSettings)}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '20px',
+              cursor: 'pointer',
+              padding: '8px 12px',
+              color: '#333',
+              position: 'relative'
+            }}
+            title="Voice Assistant Settings"
+          >
+            ⚙️
+          </button>
+          
+          {/* Settings Dropdown */}
+          {showSettings && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '60px',
+                right: '220px',
+                background: 'white',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: '16px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 1000,
+                minWidth: '280px'
+              }}
+            >
+              <div style={{ marginBottom: '12px', fontWeight: 'bold', fontSize: '14px' }}>
+                Voice Assistant Settings
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={autoReadEnabled}
+                    onChange={(e) => setAutoReadEnabled(e.target.checked)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  Auto-read recipes aloud
+                </label>
+              </div>
+              
+              {isReading && (
+                <div style={{
+                  marginTop: '12px',
+                  padding: '8px',
+                  background: '#e8f5e8',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  color: '#155724'
+                }}>
+                  🔊 Currently reading...
+                </div>
+              )}
+              
+              <div style={{
+                marginTop: '12px',
+                fontSize: '11px',
+                color: '#6c757d',
+                borderTop: '1px solid #eee',
+                paddingTop: '8px'
+              }}>
+                <strong>Auto-read:</strong> Recipes will be read aloud automatically when generated or opened.<br/>
+                <strong>Click-to-read:</strong> Click on any recipe title, ingredient, or instruction to hear it read aloud.
+              </div>
+            </div>
+          )}
+          
           <a className="btn-logout" href="./login.html">Logout</a>
           <div className="dash-nav-avatar">S</div>
         </div>
@@ -1863,13 +2583,81 @@ function RecipePage() {
         </section>
 
         <section className="rec-input-zone">
+          {/* Detected Ingredients Section */}
+          {detectedIngredients.length > 0 && (
+            <div className="detected-ingredients-section" style={{
+              background: 'linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%)',
+              border: '1px solid #28a745',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginBottom: '20px'
+            }}>
+              <div className="detected-ingredients-header" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <span style={{
+                  fontWeight: 'bold',
+                  color: '#155724',
+                  fontSize: '14px'
+                }}>
+                  Detected Ingredients ({detectedIngredients.length})
+                </span>
+                <button
+                  onClick={loadDetectedIngredients}
+                  style={{
+                    background: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                  title="Add all detected ingredients to recipe search"
+                >
+                  Add All
+                </button>
+              </div>
+              <div className="detected-ingredients-list" style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px'
+              }}>
+                {detectedIngredients.map((ingredient, index) => (
+                  <button
+                    key={index}
+                    onClick={() => addTag(ingredient)}
+                    disabled={tags.includes(normalizeTag(ingredient))}
+                    style={{
+                      background: tags.includes(normalizeTag(ingredient)) ? '#6c757d' : '#17a2b8',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      cursor: tags.includes(normalizeTag(ingredient)) ? 'not-allowed' : 'pointer',
+                      opacity: tags.includes(normalizeTag(ingredient)) ? 0.6 : 1
+                    }}
+                    title={tags.includes(normalizeTag(ingredient)) ? "Already added" : `Add ${ingredient} to recipe search`}
+                  >
+                    {tags.includes(normalizeTag(ingredient)) ? 'Added' : 'Add'} {ingredient}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="rec-zone-label">Your Ingredients</div>
           <div className="rec-tag-field">
             {tags.map((tag) => (
               <span className="rec-tag" key={tag}>
                 {tag}
                 <button className="rec-tag-remove" onClick={() => setTags((current) => current.filter((item) => item !== tag))} type="button">
-                  ✕
+                  ×
                 </button>
               </span>
             ))}
@@ -1906,7 +2694,7 @@ function RecipePage() {
           </div>
 
           <button className={`rec-generate ${loading ? "loading" : ""}`.trim()} disabled={loading} onClick={generateRecipes} type="button">
-            <span className="rec-btn-icon">✨</span>
+            <span className="rec-btn-icon"></span>
             <span className="rec-btn-text">Generate Recipes</span>
             <span className="spinner" />
           </button>
@@ -1924,7 +2712,30 @@ function RecipePage() {
               <div className="rec-results-title">
                 Three <em>recipes</em> for you
               </div>
-              <div className="rec-results-count">Based on {tags.length} ingredient{tags.length > 1 ? "s" : ""}</div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div className="rec-results-count">Based on {tags.length} ingredient{tags.length > 1 ? "s" : ""}</div>
+                {/* Read All Recipe Names Button */}
+                <button
+                  onClick={readAllRecipeNames}
+                  disabled={isReading}
+                  style={{
+                    background: isReading ? '#6c757d' : 'linear-gradient(45deg, #2196F3, #1976D2)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    cursor: isReading ? 'not-allowed' : 'pointer',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  title="Read all recipe names aloud"
+                >
+                  🔊 Read Recipe Names
+                </button>
+              </div>
             </div>
 
             <div className="rec-grid">
@@ -1940,9 +2751,44 @@ function RecipePage() {
                         </span>
                       ))}
                       <span className="rec-card-badge">Uses {recipe.matchedCount} of your items</span>
+                      {recipe.isAIGenerated && (
+                        <span className="rec-card-badge ai-badge" style={{
+                          background: 'linear-gradient(45deg, #6366f1, #8b5cf6)',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '11px'
+                        }}>
+                          AI Generated
+                        </span>
+                      )}
                     </div>
-                    <div className="rec-card-title">{recipe.title}</div>
-                    <div className="rec-card-desc">{recipe.description}</div>
+                    {/* Ingredient Match Indicator */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 10px',
+                      marginBottom: '8px',
+                      background: '#f8f9fa',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      <span style={{ color: '#28a745' }}>✓ {recipe.matchedCount} ingredient{recipe.matchedCount !== 1 ? 's' : ''} you have</span>
+                      <span style={{ color: '#6c757d' }}>•</span>
+                      <span style={{ color: '#6c757d', fontSize: '11px' }}>View recipe for full list</span>
+                    </div>
+                    <div 
+                      className="rec-card-title" 
+                      dangerouslySetInnerHTML={{ __html: formatDishTitle(recipe.title) }}
+                      {...makeReadable(recipe.title.replace(/\*\*/g, ''), 'Recipe')}
+                    />
+                    <div 
+                      className="rec-card-desc"
+                      {...makeReadable(recipe.description, 'Description')}
+                    >
+                      {recipe.description}
+                    </div>
                     <div className="rec-card-ingredients">
                       {recipe.usedIngredients.map((ingredient) => {
                         const matched = tags.some(
@@ -1963,11 +2809,11 @@ function RecipePage() {
                       <div><strong>{recipe.calories}</strong><span>Calories</span></div>
                     </div>
                     <div className="rec-card-actions">
-                      <button className="rec-primary-btn" onClick={() => setSelectedRecipe(recipe)} type="button">
+                      <button className="rec-primary-btn" onClick={() => fetchRecipeDetails(recipe)} type="button">
                         View Recipe
                       </button>
                       <button className={`rec-secondary-btn ${saved.includes(recipe.title) ? "saved" : ""}`.trim()} onClick={() => toggleSaved(recipe.title)} type="button">
-                        ♥
+                        Save
                       </button>
                     </div>
                   </div>
@@ -1993,11 +2839,99 @@ function RecipePage() {
               <div className="rec-modal-header">
                 <div>
                   <span className="rec-modal-emoji">{selectedRecipe.emoji}</span>
-                  <div className="rec-modal-title">{selectedRecipe.title}</div>
+                  <div 
+                    className="rec-modal-title" 
+                    dangerouslySetInnerHTML={{ __html: formatDishTitle(selectedRecipe.title) }}
+                    {...makeReadable(selectedRecipe.title.replace(/\*\*/g, ''), 'Recipe title')}
+                  />
                 </div>
-                <button className="rec-modal-close" onClick={() => setSelectedRecipe(null)} type="button">
-                  ✕
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {/* Read Recipe Names Button */}
+                  <button
+                    onClick={() => {
+                      const recipeTitle = selectedRecipe.title.replace(/\*\*/g, '');
+                      speakText(`Recipe: ${recipeTitle}`);
+                    }}
+                    disabled={isReading}
+                    style={{
+                      background: isReading ? '#6c757d' : 'linear-gradient(45deg, #2196F3, #1976D2)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      cursor: isReading ? 'not-allowed' : 'pointer',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                    title="Read recipe name aloud"
+                  >
+                    🔊 Name
+                  </button>
+                  
+                  {/* Read Cooking Instructions Button */}
+                  <button
+                    onClick={() => readCookingInstructions(selectedRecipe)}
+                    disabled={isReading}
+                    style={{
+                      background: isReading ? '#6c757d' : 'linear-gradient(45deg, #FF9800, #F57C00)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      cursor: isReading ? 'not-allowed' : 'pointer',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                    title="Read cooking instructions aloud"
+                  >
+                    🔊 Instructions
+                  </button>
+                  
+                  {/* Read Full Recipe Button */}
+                  <button
+                    onClick={() => {
+                      const fullRecipe = `
+                        ${selectedRecipe.title.replace(/\*\*/g, '')}. 
+                        Cook time: ${selectedRecipe.time}. 
+                        Servings: ${selectedRecipe.servings}. 
+                        Difficulty: ${selectedRecipe.difficulty}.
+                        Ingredients needed: ${getFormattedIngredients(selectedRecipe).map(ing => 
+                          `${ing.quantity} ${ing.unit} ${ing.name}${ing.preparation ? ', ' + ing.preparation : ''}`
+                        ).join(', ')}.
+                        Cooking instructions: ${selectedRecipe.steps.map((step, idx) => 
+                          `Step ${idx + 1}: ${step.replace(/<[^>]*>/g, '').replace(/\*\*/g, '')}`
+                        ).join('. ')}.
+                      `.replace(/\s+/g, ' ').trim();
+                      speakText(fullRecipe);
+                    }}
+                    disabled={isReading}
+                    style={{
+                      background: isReading ? '#6c757d' : 'linear-gradient(45deg, #4CAF50, #45a049)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      cursor: isReading ? 'not-allowed' : 'pointer',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                    title="Read entire recipe aloud"
+                  >
+                    🔊 Full Recipe
+                  </button>
+                  <button className="rec-modal-close" onClick={() => setSelectedRecipe(null)} type="button">
+                    Close
+                  </button>
+                </div>
               </div>
               <div className="rec-modal-stats">
                 <div><strong>{selectedRecipe.time}</strong><span>Cook time</span></div>
@@ -2006,29 +2940,391 @@ function RecipePage() {
                 <div><strong>{selectedRecipe.difficulty}</strong><span>Difficulty</span></div>
               </div>
               <div className="rec-modal-section">Ingredients</div>
+              {(() => {
+                const ingredients = getFormattedIngredients(selectedRecipe);
+                console.log('Formatted ingredients for display:', ingredients);
+                console.log('Selected recipe data:', {
+                  usedIngredients: selectedRecipe.usedIngredients,
+                  extraIngredients: selectedRecipe.extraIngredients,
+                  steps: selectedRecipe.steps?.length
+                });
+                
+                const userHas = ingredients.filter(ing => ing.isFromUserInput).length;
+                const total = ingredients.length;
+                const matchPercentage = total > 0 ? Math.round((userHas / total) * 100) : 0;
+                
+                return (
+                  <div style={{
+                    padding: '10px 15px',
+                    marginBottom: '10px',
+                    background: matchPercentage === 100 ? '#d4edda' : matchPercentage >= 50 ? '#fff8e1' : '#f8d7da',
+                    border: `2px solid ${matchPercentage === 100 ? '#28a745' : matchPercentage >= 50 ? '#ff9800' : '#dc3545'}`,
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '10px'
+                  }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                      You have <span style={{ color: '#28a745', fontSize: '16px' }}>{userHas}</span> of <span style={{ fontSize: '16px' }}>{total}</span> ingredients
+                    </div>
+                    <div style={{
+                      padding: '5px 12px',
+                      borderRadius: '15px',
+                      background: matchPercentage === 100 ? '#28a745' : matchPercentage >= 50 ? '#ff9800' : '#dc3545',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '13px'
+                    }}>
+                      {matchPercentage}% Match
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="rec-modal-ingredients">
-                {[...selectedRecipe.usedIngredients, ...selectedRecipe.extraIngredients].map((ingredient) => (
-                  <span
-                    className={`rec-ing-pill ${selectedRecipe.usedIngredients.includes(ingredient) ? "used" : "extra"}`.trim()}
-                    key={ingredient}
+                {getFormattedIngredients(selectedRecipe).map((ingredient) => (
+                  <div 
+                    className={`rec-ingredient-item ${ingredient.isFromUserInput ? 'user-provided' : 'additional'}`}
+                    key={ingredient.id}
+                    {...makeReadable(`${ingredient.quantity} ${ingredient.unit} ${ingredient.name}${ingredient.preparation ? ', ' + ingredient.preparation : ''}`, 'Ingredient')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      padding: '8px 12px',
+                      margin: '4px 0',
+                      backgroundColor: ingredient.isFromUserInput ? '#d4edda' : '#fff8e1',
+                      border: `2px solid ${ingredient.isFromUserInput ? '#28a745' : '#ff9800'}`,
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
                   >
-                    {ingredient}
-                  </span>
+                    <div style={{ flex: '0 0 80px', fontWeight: 'bold', color: '#6c757d' }}>
+                      {ingredient.quantity} {ingredient.unit}
+                    </div>
+                    <div style={{ flex: '1' }}>
+                      <div style={{ fontWeight: '600', color: '#212529' }}>
+                        {ingredient.name}
+                      </div>
+                      {ingredient.preparation && (
+                        <div style={{ fontSize: '12px', color: '#6c757d', fontStyle: 'italic' }}>
+                          {ingredient.preparation}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ 
+                      flex: '0 0 auto',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <div style={{ 
+                        fontSize: '10px', 
+                        padding: '3px 8px', 
+                        borderRadius: '12px',
+                        backgroundColor: ingredient.isFromUserInput ? '#28a745' : '#ff9800',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {ingredient.isFromUserInput ? '✓ You Have' : '+ Need'}
+                      </div>
+                      {!ingredient.isFromUserInput && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openHelpModal(ingredient);
+                          }}
+                          style={{
+                            background: 'linear-gradient(45deg, #dc3545, #c82333)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '4px 10px',
+                            fontSize: '10px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            whiteSpace: 'nowrap',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = 'linear-gradient(45deg, #c82333, #bd2130)';
+                            e.target.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = 'linear-gradient(45deg, #dc3545, #c82333)';
+                            e.target.style.transform = 'scale(1)';
+                          }}
+                          title="Request help for this ingredient"
+                        >
+                          🆘 Send Help
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
               <div className="rec-modal-section">Instructions</div>
               <div className="rec-modal-steps">
-                {selectedRecipe.steps.map((step, index) => (
-                  <div className="rec-step" key={`${selectedRecipe.title}-${index}`}>
-                    <div className="rec-step-num">{index + 1}</div>
-                    <div className="rec-step-text">{step}</div>
-                  </div>
-                ))}
+                {(() => {
+                  console.log('Rendering steps, count:', selectedRecipe.steps?.length);
+                  console.log('Steps data:', selectedRecipe.steps);
+                  return selectedRecipe.steps.map((step, index) => (
+                    <div className="rec-step" key={`${selectedRecipe.title}-${index}`}>
+                      <div className="rec-step-num">{index + 1}</div>
+                      <div 
+                        className="rec-step-text" 
+                        dangerouslySetInnerHTML={{ __html: formatRecipeStep(step) }}
+                        {...makeReadable(step.replace(/<[^>]*>/g, '').replace(/\*\*/g, ''), `Step ${index + 1}`)}
+                      />
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
           </div>
         ) : null}
       </div>
+
+      {/* Help Request Modal */}
+      {showHelpModal && helpIngredient && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px'
+          }}
+          onClick={() => setShowHelpModal(false)}
+        >
+          <div 
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '500px',
+              width: '100%',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+              animation: 'slideIn 0.3s ease'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+              borderBottom: '2px solid #f0f0f0',
+              paddingBottom: '15px'
+            }}>
+              <h3 style={{ margin: 0, color: '#333', fontSize: '20px', fontWeight: 'bold' }}>
+                🆘 Request Help
+              </h3>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  padding: '0',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#f0f0f0';
+                  e.target.style.color = '#333';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'none';
+                  e.target.style.color = '#666';
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Ingredient Info */}
+            <div style={{
+              background: '#fff8e1',
+              border: '2px solid #ff9800',
+              borderRadius: '8px',
+              padding: '15px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ fontSize: '13px', color: '#666', marginBottom: '5px', fontWeight: 'bold' }}>
+                You need:
+              </div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
+                {helpIngredient.quantity} {helpIngredient.unit} {helpIngredient.name}
+                {helpIngredient.preparation && (
+                  <span style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
+                    {' '}({helpIngredient.preparation})
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Message Input */}
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 'bold',
+                color: '#333',
+                fontSize: '14px'
+              }}>
+                Your Message:
+              </label>
+              <textarea
+                value={helpMessage}
+                onChange={(e) => setHelpMessage(e.target.value)}
+                placeholder="Type your help request message here..."
+                style={{
+                  width: '100%',
+                  minHeight: '120px',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '2px solid #e0e0e0',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#4CAF50'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              flexWrap: 'wrap'
+            }}>
+              <button
+                onClick={generateHelpMessage}
+                disabled={isGeneratingMessage}
+                style={{
+                  flex: '1',
+                  minWidth: '150px',
+                  background: isGeneratingMessage 
+                    ? '#6c757d' 
+                    : 'linear-gradient(45deg, #6366f1, #8b5cf6)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 20px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: isGeneratingMessage ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isGeneratingMessage) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                {isGeneratingMessage ? (
+                  <>
+                    <span className="spinner" style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderTopColor: 'white',
+                      borderRadius: '50%',
+                      animation: 'spin 0.8s linear infinite'
+                    }} />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    ✨ AI Generate Message
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={sendHelpRequest}
+                disabled={!helpMessage.trim()}
+                style={{
+                  flex: '1',
+                  minWidth: '150px',
+                  background: !helpMessage.trim()
+                    ? '#6c757d'
+                    : 'linear-gradient(45deg, #4CAF50, #45a049)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 20px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: !helpMessage.trim() ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (helpMessage.trim()) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.4)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                📤 Send Help Request
+              </button>
+            </div>
+
+            {/* Helper Text */}
+            <div style={{
+              marginTop: '15px',
+              fontSize: '12px',
+              color: '#666',
+              textAlign: 'center',
+              fontStyle: 'italic'
+            }}>
+              Your message will be copied to clipboard to share with friends or community
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
