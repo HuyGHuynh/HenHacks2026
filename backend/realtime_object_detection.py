@@ -76,7 +76,7 @@ class GeminiVisionDetector:
         """Set up MongoDB connection."""
         try:
             # MongoDB connection parameters
-            connection_string = "mongodb+srv://doadmin:6H084P5h1ZR9c7YS@db-mongodb-nyc3-54229-ae30f003.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-nyc3-54229"
+            connection_string = "mongodb+srv://admindev:0S876GWT3f19j2Vh@db-mongodb-nyc3-54229-ae30f003.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-nyc3-54229"
             
             # Connect to MongoDB
             self.mongo_client = MongoClient(connection_string)
