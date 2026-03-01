@@ -330,6 +330,7 @@ main {
 
 .btn-primary,
 .btn-secondary,
+.btn-header-link,
 .btn-logout,
 .btn-submit,
 .btn-social,
@@ -368,6 +369,7 @@ main {
 }
 
 .btn-secondary,
+.btn-header-link,
 .btn-logout,
 .btn-social {
   padding: 0.9rem 1.2rem;
@@ -381,6 +383,7 @@ main {
 }
 
 .btn-secondary:hover,
+.btn-header-link:hover,
 .btn-logout:hover,
 .btn-social:hover {
   border-color: var(--sage);
@@ -388,6 +391,7 @@ main {
   box-shadow: var(--shadow);
 }
 
+.btn-header-link,
 .btn-logout {
   font-size: 0.68rem;
   letter-spacing: 0.08em;
