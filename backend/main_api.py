@@ -549,20 +549,34 @@ def print_endpoints():
     print(f"\n🌐 API running at: http://localhost:5000")
     print("="*60)
 
+# Initialize services when module is imported (for gunicorn)
+try:
+    print("🚀 Initializing FreshLoop API services...")
+    if not initialize_services():
+        print("⚠️  Warning: Some services failed to initialize")
+except Exception as e:
+    print(f"⚠️  Warning: Service initialization error: {e}")
+
+# WSGI entry point for gunicorn
+def create_app():
+    """Create and configure the Flask application for WSGI deployment"""
+    return app
+
 if __name__ == '__main__':
-    print("🚀 Starting FreshLoop API Server...")
+    print("🚀 Starting FreshLoop API Server in development mode...")
     
-    # Initialize services
-    if initialize_services():
-        print_endpoints()
-        
-        # Start Flask app
-        app.run(
-            host='0.0.0.0',
-            port=5000,
-            debug=True,
-            threaded=True
-        )
-    else:
-        print("❌ Failed to initialize services. Exiting.")
-        sys.exit(1)
+    # Initialize services if not already done
+    if not cooking_assistant or not vision_detector:
+        if not initialize_services():
+            print("❌ Failed to initialize services. Exiting.")
+            sys.exit(1)
+    
+    print_endpoints()
+    
+    # Start Flask app in development mode
+    app.run(
+        host='0.0.0.0',
+        port=int(os.environ.get('PORT', 5000)),
+        debug=False,  # Changed to False for production-like behavior
+        threaded=True
+    )
