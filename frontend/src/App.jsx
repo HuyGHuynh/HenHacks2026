@@ -290,6 +290,10 @@ function DetectionPage() {
     window.location.href = "./login.html";
   };
 
+  const handleGoToDashboard = () => {
+    window.location.href = "./dashboard.html";
+  };
+
   const updateResultAction = (id, action, value) => {
     setResults((current) =>
       current.map((item) =>
@@ -367,6 +371,9 @@ function DetectionPage() {
             <div className="status-dot" />
             <span>{statusLabel}</span>
           </div>
+          <button className="btn-header-link" onClick={handleGoToDashboard} type="button">
+            Dashboard
+          </button>
           <button className="btn-logout" onClick={handleLogout} type="button">
             Logout
           </button>
@@ -713,30 +720,11 @@ function LoginPage() {
     event.preventDefault();
     setError("");
 
-    if (!email.trim()) {
-      setError("Please enter your email address.");
-      return;
-    }
-    if (!email.includes("@")) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    if (!password) {
-      setError("Please enter your password.");
-      return;
-    }
-
     setLoading(true);
 
     window.setTimeout(() => {
-      if (email.trim() === "demo@freshloop.com" && password === "password") {
-        setLoading(false);
-        setSuccess(true);
-        return;
-      }
       setLoading(false);
-      setPassword("");
-      setError("Invalid email or password. Try demo@freshloop.com / password");
+      setSuccess(true);
     }, 1600);
   };
 
