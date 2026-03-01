@@ -140,6 +140,73 @@ const RECIPE_DATABASE = [
   },
 ];
 
+const SOCIAL_POSTS = [
+  {
+    id: 1,
+    type: "giving",
+    author: "Tom K.",
+    initials: "T",
+    location: "0.2 mi away",
+    time: "3 min ago",
+    text: "Fresh garden broccoli and kale. Picked this morning and free to a good home.",
+    items: ["Broccoli", "Kale", "Courgettes"],
+    images: ["🥦", "🥬", "🥒"],
+    qty: "~2 kg total",
+    expiry: "Best used today",
+    likes: 4,
+    comments: [
+      { author: "Maria L.", initials: "M", text: "I can take the broccoli after 4pm if that works.", time: "1 min ago" },
+    ],
+  },
+  {
+    id: 2,
+    type: "wanting",
+    author: "Amy C.",
+    initials: "A",
+    location: "0.5 mi away",
+    time: "9 min ago",
+    text: "Looking for any spare eggs or milk this week. Anything helps.",
+    items: ["Eggs", "Milk", "Yoghurt"],
+    images: ["🥚", "🥛", "🍶"],
+    qty: "Any amount",
+    expiry: null,
+    likes: 11,
+    comments: [
+      { author: "James R.", initials: "J", text: "I have eggs and cheddar going spare. Happy to drop off.", time: "5 min ago" },
+    ],
+  },
+  {
+    id: 3,
+    type: "giving",
+    author: "Maria L.",
+    initials: "M",
+    location: "0.3 mi away",
+    time: "22 min ago",
+    text: "Extra sourdough loaf from this weekend. Needs to go today.",
+    items: ["Sourdough Bread"],
+    images: ["🍞"],
+    qty: "1 whole loaf",
+    expiry: "Today by 7pm",
+    likes: 7,
+    comments: [],
+  },
+  {
+    id: 4,
+    type: "giving",
+    author: "Priya S.",
+    initials: "P",
+    location: "0.6 mi away",
+    time: "2h ago",
+    text: "Cooked a large pot of vegan dal and packed extra portions.",
+    items: ["Red Lentil Dal", "Basmati Rice"],
+    images: ["🍲", "🍚"],
+    qty: "4 portions",
+    expiry: "Use by tomorrow",
+    likes: 22,
+    comments: [],
+  },
+];
+
 const PAGE = (() => {
   if (window.location.pathname.endsWith("/login.html") || window.location.pathname === "/login.html") {
     return "login";
@@ -149,6 +216,9 @@ const PAGE = (() => {
   }
   if (window.location.pathname.endsWith("/recipe.html") || window.location.pathname === "/recipe.html") {
     return "recipe";
+  }
+  if (window.location.pathname.endsWith("/social.html") || window.location.pathname === "/social.html") {
+    return "social";
   }
   return "detection";
 })();
@@ -162,6 +232,9 @@ function App() {
   }
   if (PAGE === "recipe") {
     return <RecipePage />;
+  }
+  if (PAGE === "social") {
+    return <SocialPage />;
   }
   return <DetectionPage />;
 }
@@ -243,6 +316,16 @@ function DetectionPage() {
     }
   };
 
+  // Dynamic API URL detection for deployment
+  const getApiUrl = () => {
+    // If we're on DigitalOcean (bytemequickly.tech), use same domain
+    if (window.location.hostname === 'bytemequickly.tech') {
+      return `${window.location.protocol}//${window.location.hostname}`;
+    }
+    // For local development, use localhost:5000
+    return 'http://localhost:5000';
+  };
+
   // Handle community sharing
   const handleCommunityShare = (result, shared) => {
     if (shared) {
@@ -289,7 +372,7 @@ function DetectionPage() {
   // Fetch Gemini results from API
   const fetchGeminiResults = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/gemini-results');
+      const response = await fetch(`${getApiUrl()}/api/gemini-results`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -316,7 +399,7 @@ function DetectionPage() {
   // Add test detection
   const addTestDetection = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/test-detection', {
+      const response = await fetch(`${getApiUrl()}/api/test-detection`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -459,7 +542,7 @@ function DetectionPage() {
 
         try {
           // Send to backend API
-          const response = await fetch('http://localhost:5000/api/analyze-image', {
+          const response = await fetch(`${getApiUrl()}/api/analyze-image`, {
             method: 'POST',
             body: formData
           });
@@ -520,6 +603,10 @@ function DetectionPage() {
 
   const handleGoToDashboard = () => {
     window.location.href = "./dashboard.html";
+  };
+
+  const handleGoToCommunity = () => {
+    window.location.href = "./social.html";
   };
 
   const updateResultAction = (id, action, value) => {
@@ -601,6 +688,9 @@ function DetectionPage() {
           </div>
           <button className="btn-header-link" onClick={handleGoToDashboard} type="button">
             Dashboard
+          </button>
+          <button className="btn-header-link" onClick={handleGoToCommunity} type="button">
+            Community
           </button>
           <button className="btn-logout" onClick={handleLogout} type="button">
             Logout
@@ -1422,15 +1512,9 @@ function OverviewDashboardPage() {
           Fresh<em>Loop</em>
         </a>
         <div className="dash-nav-right">
-          <a className="dash-nav-link" href="#">
-            History
-          </a>
-          <a className="dash-nav-link" href="#">
-            Network
-          </a>
-          <a className="dash-nav-link" href="#">
-            Settings
-          </a>
+          <a className="dash-nav-link" href="./index.html">Detect</a>
+          <a className="dash-nav-link" href="./recipe.html">Recipes</a>
+          <a className="dash-nav-link" href="./social.html">Community</a>
           <a className="btn-logout" href="./login.html">
             Logout
           </a>
@@ -1488,6 +1572,20 @@ function OverviewDashboardPage() {
             <div className="dash-cta-desc">
               Tell us what&apos;s in your fridge or pantry. We&apos;ll suggest recipes to use ingredients before they
               expire.
+            </div>
+            <div className="dash-cta-arrow">→</div>
+          </a>
+
+          <a className="dash-cta-card recipes" href="./social.html">
+            <div className="dash-cta-icon">🌍</div>
+            <div className="dash-cta-label">Neighbourhood</div>
+            <div className="dash-cta-title">
+              Community
+              <br />
+              Board
+            </div>
+            <div className="dash-cta-desc">
+              Post extra food, claim nearby offers, and coordinate handoffs with neighbors and local partners.
             </div>
             <div className="dash-cta-arrow">→</div>
           </a>
@@ -2382,6 +2480,7 @@ function RecipePage() {
           <a className="rec-nav-link" href="./dashboard.html">Dashboard</a>
           <a className="rec-nav-link" href="./index.html">Detect</a>
           <a className="rec-nav-link active" href="./recipe.html">Recipes</a>
+          <a className="rec-nav-link" href="./social.html">Community</a>
           
           {/* Settings Gear Button */}
           <button
@@ -3226,6 +3325,383 @@ function RecipePage() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+function SocialPage() {
+  const [postType, setPostType] = useState("giving");
+  const [feedFilter, setFeedFilter] = useState("all");
+  const [posts, setPosts] = useState(
+    SOCIAL_POSTS.map((post) => ({
+      ...post,
+      liked: false,
+      claimed: false,
+      commentsOpen: false,
+      commentDraft: "",
+    })),
+  );
+  const [compose, setCompose] = useState({ text: "", items: "", qty: "", expiry: "" });
+  const [toast, setToast] = useState("");
+
+  useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setToast(""), 2500);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const visiblePosts = posts.filter((post) => {
+    if (feedFilter === "all") return true;
+    if (feedFilter === "expiring") return Boolean(post.expiry);
+    if (feedFilter === "nearby") return post.location.includes("0.");
+    return post.type === feedFilter;
+  });
+
+  const updatePost = (id, updater) => {
+    setPosts((current) => current.map((post) => (post.id === id ? updater(post) : post)));
+  };
+
+  const submitPost = () => {
+    if (!compose.text.trim()) {
+      return;
+    }
+    const nextItems = compose.items
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const newPost = {
+      id: Date.now(),
+      type: postType,
+      author: "Sarah M.",
+      initials: "S",
+      location: "Your location",
+      time: "Just now",
+      text: compose.text.trim(),
+      items: nextItems.length ? nextItems : ["Food"],
+      images: ["🥬", "🥕", "🍞"].slice(0, Math.max(1, Math.min(3, nextItems.length || 1))),
+      qty: compose.qty.trim() || "Amount TBD",
+      expiry: compose.expiry.trim() || null,
+      likes: 0,
+      comments: [],
+      liked: false,
+      claimed: false,
+      commentsOpen: false,
+      commentDraft: "",
+    };
+    setPosts((current) => [newPost, ...current]);
+    setCompose({ text: "", items: "", qty: "", expiry: "" });
+    setFeedFilter("all");
+    setToast(postType === "giving" ? "Posted! Nearby neighbors can see it now." : "Request posted to the community board.");
+  };
+
+  return (
+    <>
+      <nav className="soc-nav">
+        <a className="logo" href="./dashboard.html">
+          Fresh<em>Loop</em>
+        </a>
+        <div className="soc-nav-right">
+          <a className="soc-nav-link" href="./dashboard.html">Dashboard</a>
+          <a className="soc-nav-link" href="./index.html">Detect</a>
+          <a className="soc-nav-link" href="./recipe.html">Recipes</a>
+          <a className="soc-nav-link active" href="./social.html">Community</a>
+          <a className="btn-logout" href="./login.html">Logout</a>
+          <div className="dash-nav-avatar" title="Sarah M.">S</div>
+        </div>
+      </nav>
+
+      <div className="soc-layout">
+        <aside className="soc-sidebar-left">
+          <div className="soc-profile-card">
+            <div className="soc-profile-avatar">S</div>
+            <div className="soc-profile-name">Sarah M.</div>
+            <div className="soc-profile-loc">Wilmington, DE · 0.3 mi radius</div>
+            <div className="soc-profile-stats">
+              <div><strong>47</strong><span>Given</span></div>
+              <div><strong>12</strong><span>Received</span></div>
+              <div><strong>4.9</strong><span>Rating</span></div>
+            </div>
+          </div>
+
+          <div className="soc-sidebar-section">
+            <div className="soc-sidebar-title">Browse</div>
+            {[
+              ["all", "All Posts", posts.length],
+              ["giving", "Giving Away", posts.filter((post) => post.type === "giving").length],
+              ["wanting", "Looking For", posts.filter((post) => post.type === "wanting").length],
+              ["nearby", "Nearby", posts.filter((post) => post.location.includes("0.")).length],
+              ["expiring", "Expiring", posts.filter((post) => post.expiry).length],
+            ].map(([key, label, count]) => (
+              <button
+                className={`soc-filter-btn ${feedFilter === key ? "active" : ""}`.trim()}
+                key={key}
+                onClick={() => setFeedFilter(key)}
+                type="button"
+              >
+                <span>{label}</span>
+                <span className="count">{count}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="soc-sidebar-section">
+            <div className="soc-sidebar-title">Active Neighbors</div>
+            {[
+              ["T", "Tom K.", "0.2 mi away"],
+              ["M", "Maria L.", "0.3 mi away"],
+              ["J", "James R.", "0.4 mi away"],
+              ["A", "Amy C.", "0.5 mi away"],
+            ].map(([initial, name, dist], index) => (
+              <div className="soc-nearby-row" key={name}>
+                <div className={`soc-nearby-avatar avatar-${index + 1}`}>{initial}</div>
+                <div className="soc-nearby-info">
+                  <div className="soc-nearby-name">{name}</div>
+                  <div className="soc-nearby-dist">{dist}</div>
+                </div>
+                <div className={`soc-nearby-dot ${index === 2 ? "amber" : "green"}`} />
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <main className="soc-feed">
+          <div className="soc-compose-box">
+            <div className="soc-compose-tabs">
+              <button className={`soc-compose-tab ${postType === "giving" ? "active giving" : ""}`.trim()} onClick={() => setPostType("giving")} type="button">
+                I&apos;m Giving Away
+              </button>
+              <button className={`soc-compose-tab ${postType === "wanting" ? "active wanting" : ""}`.trim()} onClick={() => setPostType("wanting")} type="button">
+                I&apos;m Looking For
+              </button>
+            </div>
+            <textarea
+              className="soc-compose-textarea"
+              onChange={(event) => setCompose((current) => ({ ...current, text: event.target.value }))}
+              placeholder={
+                postType === "giving"
+                  ? "I have extra spinach and carrots from the garden."
+                  : "Looking for spare eggs or bread this week."
+              }
+              value={compose.text}
+            />
+            <div className="soc-compose-meta">
+              <input
+                className="soc-compose-input"
+                onChange={(event) => setCompose((current) => ({ ...current, items: event.target.value }))}
+                placeholder="Items (comma-separated)"
+                value={compose.items}
+              />
+              <input
+                className="soc-compose-input short"
+                onChange={(event) => setCompose((current) => ({ ...current, qty: event.target.value }))}
+                placeholder="Quantity"
+                value={compose.qty}
+              />
+              <input
+                className="soc-compose-input short"
+                onChange={(event) => setCompose((current) => ({ ...current, expiry: event.target.value }))}
+                placeholder="Best by"
+                value={compose.expiry}
+              />
+            </div>
+            <div className="soc-compose-footer">
+              <div className="soc-compose-hints">
+                <span>📍</span>
+                <span>📷</span>
+                <span>⏰</span>
+              </div>
+              <button className={`soc-post-btn ${postType === "wanting" ? "wanting" : ""}`.trim()} onClick={submitPost} type="button">
+                Post
+              </button>
+            </div>
+          </div>
+
+          <div className="soc-feed-filter-bar">
+            {[
+              ["all", "All"],
+              ["giving", "Giving"],
+              ["wanting", "Looking For"],
+              ["expiring", "Expiring"],
+              ["nearby", "Nearby"],
+            ].map(([key, label]) => (
+              <button
+                className={`soc-feed-filter ${feedFilter === key ? "active" : ""}`.trim()}
+                key={key}
+                onClick={() => setFeedFilter(key)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {visiblePosts.map((post) => (
+            <div className={`soc-post-card ${post.type}`.trim()} key={post.id}>
+              <div className="soc-post-header">
+                <div className="soc-post-avatar">{post.initials}</div>
+                <div className="soc-post-author-info">
+                  <div className="soc-post-author-row">
+                    <div className="soc-post-author">{post.author}</div>
+                    <span className={`soc-post-badge ${post.type}`.trim()}>
+                      {post.type === "giving" ? "Giving Away" : "Looking For"}
+                    </span>
+                  </div>
+                  <div className="soc-post-meta">{post.location}</div>
+                </div>
+                <div className="soc-post-time">{post.time}</div>
+              </div>
+              <div className="soc-post-body">{post.text}</div>
+              <div className="soc-food-items">
+                {post.items.map((item) => (
+                  <span className={`soc-food-pill ${post.type}`.trim()} key={`${post.id}-${item}`}>{item}</span>
+                ))}
+              </div>
+              <div className="soc-post-images">
+                {post.images.map((item, index) => (
+                  <div className="soc-post-img" key={`${post.id}-${index}`}>{item}</div>
+                ))}
+              </div>
+              <div className="soc-post-info-row">
+                <div>{post.qty}</div>
+                {post.expiry ? <div>{post.expiry}</div> : null}
+              </div>
+              <div className="soc-post-actions">
+                <button
+                  className={`soc-action-btn ${post.claimed ? "done" : ""}`.trim()}
+                  onClick={() => {
+                    if (post.claimed) return;
+                    updatePost(post.id, (current) => ({ ...current, claimed: true }));
+                    setToast(post.type === "giving" ? `Claimed ${post.author}'s post.` : `You offered help to ${post.author}.`);
+                  }}
+                  type="button"
+                >
+                  {post.type === "giving" ? (post.claimed ? "Claimed" : "I'll Take It") : (post.claimed ? "Offered" : "I Can Help")}
+                </button>
+                <button
+                  className={`soc-action-btn ${post.liked ? "liked" : ""}`.trim()}
+                  onClick={() =>
+                    updatePost(post.id, (current) => ({
+                      ...current,
+                      liked: !current.liked,
+                      likes: current.likes + (current.liked ? -1 : 1),
+                    }))
+                  }
+                  type="button"
+                >
+                  ♥ {post.likes}
+                </button>
+                <button
+                  className="soc-action-btn"
+                  onClick={() => updatePost(post.id, (current) => ({ ...current, commentsOpen: !current.commentsOpen }))}
+                  type="button"
+                >
+                  💬 {post.comments.length}
+                </button>
+                <button className="soc-action-btn" onClick={() => setToast("Link copied to clipboard.")} type="button">
+                  Share
+                </button>
+              </div>
+
+              {post.commentsOpen ? (
+                <div className="soc-comments">
+                  {post.comments.map((comment, index) => (
+                    <div className="soc-comment-item" key={`${post.id}-${index}`}>
+                      <div className="soc-comment-avatar">{comment.initials}</div>
+                      <div className="soc-comment-bubble">
+                        <div className="soc-comment-author">{comment.author}</div>
+                        <div className="soc-comment-text">{comment.text}</div>
+                        <div className="soc-comment-time">{comment.time}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="soc-comment-input-row">
+                    <input
+                      className="soc-comment-input"
+                      onChange={(event) => updatePost(post.id, (current) => ({ ...current, commentDraft: event.target.value }))}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && post.commentDraft.trim()) {
+                          updatePost(post.id, (current) => ({
+                            ...current,
+                            commentDraft: "",
+                            comments: [
+                              ...current.comments,
+                              { author: "Sarah M.", initials: "S", text: current.commentDraft.trim(), time: "Just now" },
+                            ],
+                          }));
+                        }
+                      }}
+                      placeholder="Add a comment..."
+                      value={post.commentDraft}
+                    />
+                    <button
+                      className="soc-comment-send"
+                      onClick={() => {
+                        if (!post.commentDraft.trim()) return;
+                        updatePost(post.id, (current) => ({
+                          ...current,
+                          commentDraft: "",
+                          comments: [
+                            ...current.comments,
+                            { author: "Sarah M.", initials: "S", text: current.commentDraft.trim(), time: "Just now" },
+                          ],
+                        }));
+                      }}
+                      type="button"
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </main>
+
+        <aside className="soc-sidebar-right">
+          <div className="soc-widget">
+            <div className="soc-widget-title">Live Activity</div>
+            {[
+              "Tom K. posted broccoli & kale available now",
+              "Amy C. is looking for eggs or dairy",
+              "Maria L. claimed a sourdough loaf from James",
+              "You gave away 4 lemons · 0 waste",
+            ].map((item) => (
+              <div className="soc-ticker-item" key={item}>{item}</div>
+            ))}
+          </div>
+
+          <div className="soc-widget">
+            <div className="soc-widget-title">Community Impact</div>
+            {[
+              ["Items shared", "78%"],
+              ["CO2 saved", "55%"],
+              ["Families fed", "65%"],
+              ["Posts today", "42%"],
+            ].map(([label, width]) => (
+              <div className="soc-impact-row" key={label}>
+                <span>{label}</span>
+                <div className="soc-impact-bar-wrap">
+                  <div className="soc-impact-bar" style={{ width }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="soc-widget">
+            <div className="soc-widget-title">Quick Links</div>
+            <div className="soc-link-list">
+              <a href="./dashboard.html">Dashboard</a>
+              <a href="./index.html">Detection</a>
+              <a href="./recipe.html">Recipes</a>
+              <a href="./login.html">Logout</a>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className={`soc-toast ${toast ? "show" : ""}`.trim()}>{toast}</div>
     </>
   );
 }
